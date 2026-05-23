@@ -125,7 +125,7 @@ td.sticky { text-align:left; padding-left:12px; position:sticky; left:0; backgro
 const SHAREPOINT_URL = "https://agronortesantafe-my.sharepoint.com/:x:/g/personal/regalinialejandro_agronorte_com_ar/IQD7JT4ch6mlSr4EHfl7GhbiAXRW8PDus4AFRvl-RkbL_A0";
 
 // URL de descarga directa
-const DOWNLOAD_URL = SHAREPOINT_URL + "?download=1";
+const DOWNLOAD_URL = "https://raw.githubusercontent.com/aleregalini7488/isg-dashboard/main/ISG_Dashboard_Data_2.xlsx";
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────────────
 let DATA = null;
@@ -150,10 +150,10 @@ function semaforo(val, obj){
 
 // ── LEER EXCEL DESDE ONEDRIVE ─────────────────────────────────────────────────
 async function fetchExcel(){
-  document.getElementById("load-sub").textContent = "Descargando datos desde OneDrive...";
+  
   
   // Intentar con la URL de descarga directa via proxy CORS
-  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(DOWNLOAD_URL)}`;
+  const proxyUrl = DOWNLOAD_URL;
   
   const response = await fetch(proxyUrl);
   if(!response.ok) throw new Error(`HTTP ${response.status}`);
