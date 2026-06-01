@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ISG · Agronorte</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── VARIABLES ORIGINALES ── */
+:root {
+  --g: #6EE26E; --gd: #2D7A2D; --gdk: #0A1A0A;
+  --y: #F5C842; --yd: #1A1500;
+  --r: #E05252; --rd: #1A0A0A;
+  --b: #111111; --bb: #0A0A0A; --bs: #161616;
+  --bd: #1E1E1E; --bt: #2A2A2A;
+  --w: #FFFFFF; --wm: #CCCCCC; --ws: #888888; --wx: #444444;
+  --blue: #7DC6FF; --blued: #0A1A3A;
+  --font-title: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r8: 8px; --r12: 12px; --r16: 16px; --r20: 20px;
+
+  /* S7 additions */
+  --jd: #367C2B; --jd2: #2d6824; --jd-pale: #0d1f0d; --jd-border: #2d5c2d;
+  --acc: #1D9E75; --acc-light: #0d2b22;
+  --amber: #B87A0C; --amb-light: #1f1500;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; }
+body { background:var(--bb); color:var(--w); font-family:var(--font-body); overflow-x:hidden; }
+button { cursor:pointer; font-family:inherit; border:none; }
+a { color:inherit; text-decoration:none; }
+
+/* ── LOADING ── */
+#loading { position:fixed; inset:0; background:var(--bb); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; gap:20px; }
+.spin { width:36px; height:36px; border:2px solid var(--bd); border-top-color:var(--g); border-radius:50%; animation:spin 0.7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.load-title { font-family:var(--font-title); font-size:20px; color:var(--g); letter-spacing:-0.02em; }
+.load-sub { font-size:12px; color:var(--ws); }
+
+/* ── APP SHELL ── */
+#app { display:none; min-height:100vh; }
+
+/* ── TOP BAR ── */
+.topbar { position:sticky; top:0; z-index:200; background:rgba(10,10,10,0.95); backdrop-filter:blur(12px); border-bottom:1px solid var(--bd); }
+.topbar-inner { display:flex; align-items:center; gap:12px; padding:0 16px; height:52px; }
+.topbar-logo { width:4px; height:22px; background:var(--g); border-radius:2px; flex-shrink:0; }
+.topbar-title { font-family:var(--font-title); font-size:15px; font-weight:800; letter-spacing:-0.02em; flex:1; }
+.back-btn { display:none; align-items:center; gap:6px; background:var(--bs); border:1px solid var(--bd); color:var(--wm); border-radius:var(--r8); padding:6px 12px; font-size:12px; font-weight:600; }
+.back-btn.visible { display:flex; }
+.refresh-btn { background:none; border:1px solid var(--bd); color:var(--ws); border-radius:var(--r8); padding:6px 10px; font-size:18px; line-height:1; transition:all 0.2s; }
+.refresh-btn:hover { border-color:var(--g); color:var(--g); }
+
+/* ── SCREEN SYSTEM ── */
+.screen { display:none; }
+.screen.active { display:block; animation:fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ══ TODOS LOS ESTILOS ORIGINALES DEL INDEX ══ */
+#screen-home { padding:16px; }
+.home-header { margin-bottom:20px; }
+.home-title { font-family:var(--font-title); font-size:26px; font-weight:800; letter-spacing:-0.03em; line-height:1.1; }
+.home-title span { color:var(--g); }
+.home-meta { display:flex; gap:12px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+.home-badge { font-size:10px; background:var(--gdk); color:var(--g); border:1px solid var(--gd); border-radius:20px; padding:3px 10px; font-weight:600; }
+.home-week { font-size:11px; color:var(--ws); }
+.score-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+.score-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:12px; text-align:center; }
+.score-card-val { font-family:var(--font-mono); font-size:22px; font-weight:700; }
+.score-card-lbl { font-size:9px; color:var(--ws); text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; }
+.suc-grid-label { font-size:10px; color:var(--ws); text-transform:uppercase; letter-spacing:0.08em; font-weight:600; margin-bottom:10px; }
+.suc-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+@media(min-width:600px){ .suc-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .suc-grid { grid-template-columns:repeat(4,1fr); } }
+.suc-home-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:14px; cursor:pointer; transition:all 0.18s; position:relative; overflow:hidden; }
+.suc-home-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--r12) var(--r12) 0 0; }
+.suc-home-card:active { transform:scale(0.97); }
+.suc-home-card:hover { border-color:var(--bt); transform:translateY(-1px); }
+.suc-home-card.urg-red::before { background:var(--r); }
+.suc-home-card.urg-yellow::before { background:var(--y); }
+.suc-home-card.urg-green::before { background:var(--g); }
+.shc-name { font-family:var(--font-title); font-size:13px; font-weight:700; margin-bottom:8px; line-height:1.2; }
+.shc-kpis { display:flex; gap:6px; margin-bottom:8px; }
+.shc-kpi { flex:1; }
+.shc-kpi-val { font-family:var(--font-mono); font-size:14px; font-weight:500; }
+.shc-kpi-lbl { font-size:8px; color:var(--ws); text-transform:uppercase; letter-spacing:0.04em; }
+.shc-bar { display:flex; gap:2px; margin-top:6px; }
+.shc-bar-seg { flex:1; height:3px; border-radius:2px; }
+.shc-score { position:absolute; top:10px; right:10px; font-family:var(--font-mono); font-size:10px; font-weight:500; }
+.shc-orgs { font-size:9px; color:var(--wx); margin-top:4px; }
+#screen-suc { padding:0; }
+.suc-hero { padding:20px 16px 0; position:relative; }
+.suc-hero-name { font-family:var(--font-title); font-size:28px; font-weight:800; letter-spacing:-0.03em; line-height:1.1; }
+.suc-hero-name span { color:var(--g); }
+.suc-hero-meta { display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; align-items:center; }
+.suc-hero-badge { font-size:10px; border-radius:20px; padding:3px 10px; font-weight:700; }
+.suc-hero-score { font-family:var(--font-mono); font-size:11px; color:var(--ws); }
+.summary-strip { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:14px 16px; }
+@media(min-width:500px){ .summary-strip { grid-template-columns:repeat(4,1fr); } }
+.sum-card { background:var(--bs); border-radius:var(--r8); padding:10px 12px; border:1px solid var(--bd); }
+.sum-val { font-family:var(--font-mono); font-size:18px; font-weight:500; }
+.sum-lbl { font-size:9px; color:var(--ws); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
+.sum-sub { font-size:9px; color:var(--wx); margin-top:1px; }
+.tabs-wrap { border-bottom:1px solid var(--bd); padding:0 16px; display:flex; gap:0; overflow-x:auto; -webkit-overflow-scrolling:touch; position:sticky; top:52px; background:var(--bb); z-index:100; }
+.tabs-wrap::-webkit-scrollbar { display:none; }
+.tab-btn { padding:12px 16px; font-size:12px; font-weight:600; color:var(--ws); border-bottom:2px solid transparent; white-space:nowrap; background:none; transition:all 0.15s; }
+.tab-btn.active { color:var(--g); border-bottom-color:var(--g); }
+.tab-content { display:none; padding:16px; }
+.tab-content.active { display:block; animation:fadeIn 0.2s ease; }
+.ind-section { margin-bottom:20px; }
+.ind-section-title { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.ind-badge { padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.04em; }
+.ind-line { flex:1; height:1px; background:var(--bd); }
+.ind-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+@media(min-width:500px){ .ind-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .ind-grid { grid-template-columns:repeat(4,1fr); } }
+.ind-chip { border-radius:var(--r8); padding:10px 12px; }
+.ind-chip-lbl { font-size:9px; color:var(--ws); text-transform:uppercase; letter-spacing:0.05em; font-family:var(--font-mono); }
+.ind-chip-val { font-family:var(--font-mono); font-size:20px; font-weight:500; margin:2px 0; }
+.ind-chip-obj { font-size:9px; color:var(--ws); }
+.ind-chip-bar { height:3px; background:var(--bt); border-radius:2px; margin-top:6px; }
+.ind-chip-bar-fill { height:3px; border-radius:2px; }
+.opp-list { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+.opp-item { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r8); padding:10px 12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.opp-tag { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+.opp-name { font-size:12px; color:var(--w); flex:1; min-width:80px; }
+.opp-right { display:flex; align-items:center; gap:8px; }
+.opp-track { width:50px; height:5px; background:var(--bt); border-radius:3px; }
+.opp-track-fill { height:5px; border-radius:3px; }
+.opp-nums { font-family:var(--font-mono); font-size:11px; color:var(--w); font-weight:500; white-space:nowrap; }
+.opp-gap { font-size:11px; font-weight:700; white-space:nowrap; }
+#screen-orgs { padding:16px; }
+.orgs-header { margin-bottom:16px; }
+.orgs-title { font-family:var(--font-title); font-size:22px; font-weight:800; letter-spacing:-0.02em; }
+.orgs-title span { color:var(--g); }
+.suc-selector { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; margin-bottom:14px; }
+.suc-selector::-webkit-scrollbar { display:none; }
+.suc-sel-btn { padding:6px 14px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; border:1px solid var(--bd); background:var(--bs); color:var(--ws); transition:all 0.15s; flex-shrink:0; }
+.suc-sel-btn.active { background:var(--gdk); border-color:var(--gd); color:var(--g); }
+.org-search { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r8); padding:9px 14px; width:100%; color:var(--w); font-size:13px; outline:none; margin-bottom:8px; font-family:var(--font-body); }
+.org-search:focus { border-color:var(--gd); }
+.org-search::placeholder { color:var(--wx); }
+.org-stats-row { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+.org-stat { font-size:11px; color:var(--ws); }
+.org-stat strong { color:var(--wm); }
+.org-list { display:flex; flex-direction:column; gap:6px; }
+.org-accordion { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); overflow:hidden; transition:border-color 0.2s; }
+.org-accordion.open { border-color:var(--gd); }
+.org-acc-header { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; }
+.org-acc-header:active { opacity:0.8; }
+.org-acc-left { flex:1; min-width:0; }
+.org-acc-name { font-size:13px; font-weight:600; color:var(--w); }
+.org-acc-city { font-size:10px; color:var(--ws); margin-top:1px; }
+.org-acc-chips { display:flex; gap:5px; flex-shrink:0; }
+.org-chip { font-size:10px; font-family:var(--font-mono); background:var(--bb); border:1px solid var(--bd); border-radius:6px; padding:3px 8px; color:var(--wm); cursor:pointer; transition:all 0.15s; }
+.org-chip:hover { border-color:var(--blue); color:var(--blue); }
+.org-chip.has-data { border-color:var(--bt); }
+.org-acc-arrow { font-size:12px; color:var(--ws); transition:transform 0.2s; flex-shrink:0; }
+.org-accordion.open .org-acc-arrow { transform:rotate(180deg); }
+.org-acc-body { display:none; border-top:1px solid var(--bd); }
+.org-accordion.open .org-acc-body { display:block; animation:fadeIn 0.2s ease; }
+.org-detail-section { padding:12px 14px; border-bottom:1px solid var(--bd); }
+.org-detail-section:last-child { border-bottom:none; }
+.org-detail-title { font-size:10px; color:var(--ws); text-transform:uppercase; letter-spacing:0.07em; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.org-detail-title::after { content:''; flex:1; height:1px; background:var(--bd); }
+.org-disp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.org-disp-card { background:var(--bb); border:1px solid var(--bd); border-radius:var(--r8); padding:8px 10px; text-align:center; }
+.org-disp-val { font-family:var(--font-mono); font-size:18px; font-weight:500; color:var(--blue); }
+.org-disp-lbl { font-size:8px; color:var(--ws); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
+.org-modems-row { display:flex; align-items:center; gap:10px; background:var(--bb); border-radius:var(--r8); padding:8px 12px; margin-top:8px; border:1px solid var(--bd); }
+.org-modems-pct { font-family:var(--font-mono); font-size:20px; font-weight:500; }
+.org-modems-info { font-size:11px; color:var(--ws); }
+.org-lic-list { display:flex; flex-direction:column; gap:5px; }
+.org-lic-item { background:var(--bb); border-radius:var(--r8); padding:8px 10px; border-left:2px solid transparent; }
+.org-lic-ns { font-family:var(--font-mono); font-size:9px; color:var(--wx); }
+.org-lic-tipo { font-size:11px; color:var(--wm); margin:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.org-lic-footer { display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
+.org-lic-fecha { font-size:10px; color:var(--ws); }
+.org-lic-dias { font-family:var(--font-mono); font-size:11px; font-weight:700; }
+.org-lic-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; margin-left:auto; }
+.eng-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; }
+.vca-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:8px; }
+@media(min-width:500px){ .vca-grid { grid-template-columns:repeat(6,1fr); } }
+.vca-chip { border-radius:6px; padding:6px 4px; text-align:center; }
+.vca-chip-val { font-size:14px; font-weight:700; }
+.vca-chip-lbl { font-size:8px; color:var(--ws); margin-top:2px; line-height:1.2; }
+.vca-num-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+@media(min-width:500px){ .vca-num-grid { grid-template-columns:repeat(3,1fr); } }
+.vca-num-card { background:var(--bb); border-radius:6px; padding:7px 8px; border:1px solid var(--bd); }
+.vca-num-val { font-family:var(--font-mono); font-size:16px; font-weight:500; }
+.vca-num-lbl { font-size:8px; color:var(--ws); margin-top:1px; line-height:1.2; }
+.risk-row { display:flex; align-items:center; gap:10px; background:var(--bb); border-radius:var(--r8); padding:8px 12px; margin-top:8px; border:1px solid var(--bd); }
+.prom-r12-big { font-family:var(--font-mono); font-size:28px; font-weight:500; }
+.empty { text-align:center; padding:40px 20px; color:var(--wx); font-size:13px; }
+.empty-icon { font-size:32px; margin-bottom:8px; }
+.err-box { background:var(--rd); border:1px solid var(--r); border-radius:var(--r12); padding:20px; text-align:center; margin:16px; }
+
+/* ══════════════════════════════════════════════
+   SCREEN S7 — mismo estilo oscuro
+══════════════════════════════════════════════ */
+#screen-s7 { padding:16px; }
+.s7-params { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:12px 16px; margin-bottom:14px; }
+.s7-params-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--ws); margin-bottom:8px; }
+.s7-params-grid { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.s7-p-item { display:flex; flex-direction:column; gap:2px; }
+.s7-p-lbl { font-size:9px; color:var(--ws); }
+.s7-p-row { display:flex; align-items:center; gap:3px; }
+.s7-p-pfx { font-size:9px; color:var(--wx); }
+.s7-p-inp { width:76px; padding:4px 7px; font-size:11px; border:1px solid var(--bd); border-radius:6px; background:var(--bb); color:var(--w); outline:none; font-family:var(--font-mono); }
+.s7-p-inp:focus { border-color:var(--gd); }
+
+.s7-tabs { display:flex; gap:0; border-bottom:1px solid var(--bd); margin-bottom:14px; overflow-x:auto; }
+.s7-tabs::-webkit-scrollbar { display:none; }
+.s7-tab { padding:10px 14px; font-size:12px; font-weight:600; color:var(--ws); border-bottom:2px solid transparent; white-space:nowrap; background:none; transition:all .15s; }
+.s7-tab.active { color:var(--g); border-bottom-color:var(--g); }
+.s7-view { display:none; }
+.s7-view.active { display:block; animation:fadeIn .2s ease; }
+
+/* KPIs S7 */
+.s7-kpi-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:14px; }
+@media(min-width:500px){ .s7-kpi-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .s7-kpi-grid { grid-template-columns:repeat(6,1fr); } }
+.s7-kpi { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r8); padding:10px 12px; border-top:2px solid var(--gd); }
+.s7-kpi-lbl { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--ws); margin-bottom:3px; }
+.s7-kpi-val { font-family:var(--font-mono); font-size:20px; font-weight:700; line-height:1.1; }
+.s7-kpi-val.green { color:var(--g); }
+.s7-kpi-val.red   { color:var(--r); }
+.s7-kpi-val.amber { color:var(--y); }
+.s7-kpi-sub { font-size:9px; color:var(--ws); margin-top:2px; }
+
+/* Charts S7 */
+.s7-chart-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:12px 14px; margin-bottom:10px; }
+.s7-chart-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--ws); margin-bottom:8px; }
+.s7-chart-wrap { position:relative; width:100%; }
+.s7-perf3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px; }
+@media(max-width:600px){ .s7-perf3 { grid-template-columns:1fr; } }
+.s7-delta { text-align:center; margin-top:4px; font-size:11px; font-weight:700; color:var(--g); }
+.s7-legend { display:flex; gap:10px; margin-bottom:6px; flex-wrap:wrap; }
+.s7-leg { display:flex; align-items:center; gap:4px; font-size:10px; color:var(--ws); }
+.s7-leg-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+
+/* Rank S7 */
+.s7-filter-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; align-items:center; }
+.s7-filter-row select, .s7-filter-row input { font-size:12px; font-family:var(--font-body); padding:5px 8px; border:1px solid var(--bd); border-radius:6px; background:var(--bs); color:var(--w); outline:none; }
+.s7-filter-row select:focus, .s7-filter-row input:focus { border-color:var(--gd); }
+.s7-tbl-wrap { overflow-x:auto; border-radius:var(--r8); border:1px solid var(--bd); }
+.s7-tbl-wrap table { width:100%; border-collapse:collapse; font-size:11px; }
+.s7-tbl-wrap thead th { padding:7px 9px; text-align:left; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ws); background:var(--bs); border-bottom:1px solid var(--bd); white-space:nowrap; }
+.s7-tbl-wrap tbody td { padding:6px 9px; border-bottom:1px solid var(--bd); white-space:nowrap; }
+.s7-tbl-wrap tbody tr:last-child td { border-bottom:none; }
+.s7-tbl-wrap tbody tr:hover td { background:var(--b); }
+
+/* Machine cards S7 */
+.s7-mcard { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:12px 14px; margin-bottom:8px; }
+.s7-mcard-name { font-family:var(--font-title); font-size:14px; font-weight:800; color:var(--w); margin-bottom:2px; }
+.s7-mcard-meta { font-size:10px; color:var(--ws); font-family:var(--font-mono); margin-bottom:8px; }
+.s7-adopt-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.s7-ai { flex:1; min-width:140px; background:var(--bb); border-radius:var(--r8); padding:7px 10px; border:1px solid var(--bd); }
+.s7-ai-name { font-size:9px; color:var(--ws); margin-bottom:3px; }
+.s7-ab-bg { height:4px; background:var(--bt); border-radius:2px; margin-bottom:3px; }
+.s7-ab-fill { height:4px; border-radius:2px; }
+.s7-perf-row { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin-bottom:8px; }
+@media(min-width:500px){ .s7-perf-row { grid-template-columns:repeat(4,1fr); } }
+.s7-pi { background:var(--bb); border-radius:var(--r8); padding:7px 10px; border:1px solid var(--bd); }
+.s7-pi-lbl { font-size:9px; color:var(--ws); margin-bottom:2px; }
+.s7-pi-on { font-family:var(--font-mono); font-size:14px; font-weight:700; color:var(--w); }
+.s7-pi-off { font-size:9px; color:var(--wx); display:block; }
+.s7-pi-d { display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:8px; margin-left:3px; }
+.s7-dg { background:#0A1A0A; color:var(--g); }
+.s7-da { background:#1A1500; color:var(--y); }
+.s7-dr { background:#1A0A0A; color:var(--r); }
+.s7-impact { background:#0d1f0d; border:1px solid var(--gd); border-radius:var(--r8); padding:10px 12px; }
+.s7-impact-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--g); margin-bottom:8px; }
+.s7-ig { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px; }
+@media(max-width:500px){ .s7-ig { grid-template-columns:1fr; } }
+.s7-ii { border-left:2px solid var(--gd); padding-left:8px; }
+.s7-ii-lbl { font-size:9px; color:var(--ws); margin-bottom:1px; }
+.s7-ii-val { font-family:var(--font-mono); font-size:14px; font-weight:700; color:var(--g); }
+.s7-ii-det { font-size:9px; color:var(--wx); font-family:var(--font-mono); }
+.s7-total { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; padding-top:8px; border-top:1px solid var(--gd); }
+.s7-rec { background:var(--bb); border-radius:6px; padding:6px 10px; margin-top:6px; border:1px solid var(--bd); }
+.s7-rec-title { font-size:9px; font-weight:700; color:var(--g); margin-bottom:3px; text-transform:uppercase; letter-spacing:.05em; }
+.s7-rec-items { display:flex; gap:12px; flex-wrap:wrap; }
+.s7-rec-item { font-size:10px; color:var(--ws); font-family:var(--font-mono); }
+.s7-warn { background:#1A0A00; border:1px solid #3A2000; border-radius:6px; padding:5px 8px; margin-top:5px; font-size:10px; color:var(--y); }
+
+/* Metodología S7 */
+.s7-met { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-top:10px; }
+.s7-met-item { border-left:2px solid; padding-left:10px; }
+.s7-met-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.s7-met-body { font-size:10px; color:var(--wm); line-height:1.7; }
+.s7-mono { font-family:var(--font-mono); background:var(--bb); padding:1px 4px; border-radius:3px; font-size:9px; }
+
+/* Badge */
+.s7-badge { display:inline-block; font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; font-family:var(--font-mono); }
+.s7-bg  { background:#0A1A0A; color:var(--g); }
+.s7-ba  { background:#1A1500; color:var(--y); }
+.s7-br  { background:#1A0A0A; color:var(--r); }
+.s7-bb  { background:#0A1A3A; color:var(--blue); }
+.s7-bjd { background:#0d1f0d; color:var(--g); border:1px solid var(--gd); }
+
+/* CSV import info */
+.s7-update-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:14px 16px; margin-bottom:14px; }
+.s7-update-title { font-size:14px; font-weight:700; color:var(--w); margin-bottom:4px; }
+.s7-update-desc { font-size:11px; color:var(--ws); margin-bottom:10px; }
+.s7-update-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:500px){ .s7-update-grid { grid-template-columns:1fr; } }
+.s7-update-box { background:var(--bb); border:1px solid var(--bd); border-radius:var(--r8); padding:10px 12px; }
+.s7-update-box-title { font-size:9px; font-weight:700; color:var(--g); margin-bottom:5px; text-transform:uppercase; letter-spacing:.06em; }
+.s7-update-box-body { font-size:10px; color:var(--wm); line-height:1.8; }
+.s7-data-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:12px 14px; margin-bottom:14px; }
+.s7-data-hdr { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.s7-btn-row { display:flex; gap:6px; flex-wrap:wrap; }
+.s7-btn { font-size:11px; font-weight:600; padding:5px 10px; border-radius:6px; border:1px solid var(--bd); background:transparent; color:var(--ws); cursor:pointer; font-family:var(--font-body); transition:all .14s; }
+.s7-btn:hover { border-color:var(--gd); color:var(--g); }
+.s7-btn-primary { background:var(--gdk); color:var(--g); border-color:var(--gd); }
+.s7-btn-warn { border-color:#3A2000; color:var(--y); }
+.s7-btn-warn:hover { background:#1A1000; }
+.act-btn { background:none; border:none; cursor:pointer; font-size:12px; padding:1px 5px; border-radius:3px; color:var(--ws); }
+.act-btn:hover { color:var(--g); }
+.act-btn.del:hover { color:var(--r); }
+
+/* Modal */
+.s7-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:500; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s; }
+.s7-overlay.open { opacity:1; pointer-events:all; }
+.s7-modal { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:20px; width:100%; max-width:400px; transform:translateY(10px); transition:transform .2s; }
+.s7-overlay.open .s7-modal { transform:translateY(0); }
+.s7-modal-title { font-family:var(--font-title); font-size:15px; font-weight:800; margin-bottom:3px; }
+.s7-modal-sub { font-size:10px; color:var(--ws); margin-bottom:14px; font-family:var(--font-mono); }
+.s7-modal-fld { margin-bottom:10px; }
+.s7-modal-lbl { font-size:10px; font-weight:600; color:var(--wm); margin-bottom:3px; display:block; }
+.s7-modal-inp { width:100%; padding:7px 9px; font-size:13px; font-family:var(--font-body); border:1px solid var(--bd); border-radius:6px; background:var(--bb); color:var(--w); outline:none; }
+.s7-modal-inp:focus { border-color:var(--gd); }
+.s7-modal-acts { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+.s7-btn-cancel { font-size:12px; padding:6px 12px; border-radius:6px; border:1px solid var(--bd); background:transparent; color:var(--ws); cursor:pointer; font-family:var(--font-body); }
+.s7-btn-save { font-size:12px; padding:6px 12px; border-radius:6px; border:none; background:var(--gd); color:#fff; cursor:pointer; font-family:var(--font-body); }
+
+/* Toast */
+.s7-toast { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--gd); color:#fff; padding:7px 14px; border-radius:7px; font-size:12px; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.4); z-index:999; transform:translateY(20px); opacity:0; transition:all .25s; pointer-events:none; }
+.s7-toast.show { transform:translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spin"></div>
+  <div class="load-title">ISG · Agronorte</div>
+  <div class="load-sub" id="load-sub">Cargando datos...</div>
+</div>
+
+<div id="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-logo"></div>
+      <div style="flex:1;">
+        <div class="topbar-title">ISG · Agronorte</div>
+      </div>
+      <button class="back-btn" id="back-btn" onclick="goHome()">← Sucursales</button>
+      <div style="display:flex;gap:6px;">
+        <button class="refresh-btn" id="s7-nav-btn" onclick="goS7()" title="S7 Ultimate" style="font-size:12px;padding:6px 10px;font-weight:600;">🌾 S7</button>
+        <button class="refresh-btn" id="orgs-nav-btn" onclick="goOrgs()" title="Organizaciones" style="font-size:12px;padding:6px 10px;font-weight:600;">Organizaciones</button>
+        <button class="refresh-btn" onclick="refreshData()" title="Actualizar">↻</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREENS ORIGINALES -->
+  <div class="screen active" id="screen-home"></div>
+  <div class="screen" id="screen-suc"></div>
+  <div class="screen" id="screen-orgs"></div>
+
+  <!-- SCREEN S7 -->
+  <div class="screen" id="screen-s7">
+
+    <div style="padding:16px;">
+
+      <!-- Info actualización -->
+      <div class="s7-update-card">
+        <div class="s7-update-title">Dashboard S7 Ultimate · Harvest Performance</div>
+        <div class="s7-update-desc">Campaña 2026 · 23 máquinas · Para agregar máquinas nuevas, exportá el CSV, completá las filas en Excel e importalo.</div>
+        <div class="s7-update-grid">
+          <div class="s7-update-box">
+            <div class="s7-update-box-title">Cómo actualizar</div>
+            <div class="s7-update-box-body">
+              1. Exportá CSV con el botón de abajo<br>
+              2. Abrilo en Excel<br>
+              3. Agregá las filas nuevas<br>
+              4. Importalo con "Importar CSV"
+            </div>
+          </div>
+          <div class="s7-update-box">
+            <div class="s7-update-box-title" style="color:var(--ws);">Campos principales</div>
+            <div class="s7-update-box-body" style="color:var(--ws);font-family:var(--font-mono);font-size:9px;">
+              cliente, modelo, ha, rinde<br>
+              adopt_gsa, adopt_hsa (%)<br>
+              prod_on, prod_off (ha/hr)<br>
+              fuel_on, fuel_off (L/ha)<br>
+              broken_on, broken_off (%)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla datos -->
+      <div class="s7-data-card">
+        <div class="s7-data-hdr">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ws);">Datos cargados — <span id="s7-cnt">0</span> máquinas</div>
+          <div class="s7-btn-row">
+            <button class="s7-btn" onclick="s7ExportCSV()">⬇ CSV</button>
+            <button class="s7-btn" onclick="s7ImportCSV()">⬆ Importar</button>
+            <input type="file" id="s7-csv-inp" accept=".csv" style="display:none;" onchange="s7HandleCSV(event)">
+            <button class="s7-btn s7-btn-warn" onclick="s7ResetCache()">⚠ Reset</button>
+            <button class="s7-btn s7-btn-primary" onclick="s7ShowDash()">Ver dashboard →</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;border-radius:var(--r8);border:1px solid var(--bd);">
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <thead><tr style="background:var(--bs);">
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ws);border-bottom:1px solid var(--bd);white-space:nowrap;">Cliente</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--ws);border-bottom:1px solid var(--bd);">Modelo</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--ws);border-bottom:1px solid var(--bd);">Ha</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--ws);border-bottom:1px solid var(--bd);">GSA%</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--ws);border-bottom:1px solid var(--bd);">HSA%</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--ws);border-bottom:1px solid var(--bd);">Prod ON</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--ws);border-bottom:1px solid var(--bd);">Prod OFF</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--ws);border-bottom:1px solid var(--bd);">Comb ON</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--ws);border-bottom:1px solid var(--bd);">Comb OFF</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--bd);"></th>
+            </tr></thead>
+            <tbody id="s7-tbody">
+              <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--wx);">Cargando datos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div id="s7-dash-empty" style="display:none;text-align:center;padding:40px 20px;color:var(--wx);">
+        <div style="font-size:32px;margin-bottom:8px;">📊</div>
+        <div style="font-size:14px;font-weight:700;color:var(--wm);">No hay datos</div>
+      </div>
+
+      <div id="s7-dash-content">
+        <!-- Params -->
+        <div class="s7-params">
+          <div class="s7-params-title">Parámetros económicos — editables</div>
+          <div class="s7-params-grid">
+            <div class="s7-p-item"><span class="s7-p-lbl">Combustible</span><div class="s7-p-row"><span class="s7-p-pfx">USD/L</span><input class="s7-p-inp" id="p_fuel" type="number" step="0.01" value="1.05" oninput="s7Recalc()"></div></div>
+            <div class="s7-p-item"><span class="s7-p-lbl">TC</span><div class="s7-p-row"><span class="s7-p-pfx">ARS/USD</span><input class="s7-p-inp" id="p_tc" type="number" step="1" value="1391" oninput="s7Recalc()"></div></div>
+            <div class="s7-p-item"><span class="s7-p-lbl">Soja</span><div class="s7-p-row"><span class="s7-p-pfx">USD/tn</span><input class="s7-p-inp" id="p_soja" type="number" step="1" value="260" oninput="s7Recalc()"></div></div>
+            <div class="s7-p-item"><span class="s7-p-lbl">Maíz</span><div class="s7-p-row"><span class="s7-p-pfx">USD/tn</span><input class="s7-p-inp" id="p_maiz" type="number" step="1" value="160" oninput="s7Recalc()"></div></div>
+            <div class="s7-p-item"><span class="s7-p-lbl">Trigo</span><div class="s7-p-row"><span class="s7-p-pfx">USD/tn</span><input class="s7-p-inp" id="p_trigo" type="number" step="1" value="190" oninput="s7Recalc()"></div></div>
+            <div class="s7-p-item"><span class="s7-p-lbl">Servicio cosecha</span><div class="s7-p-row"><span class="s7-p-pfx">USD/ha</span><input class="s7-p-inp" id="p_serv" type="number" step="1" value="108" oninput="s7Recalc()"></div></div>
+            <div class="s7-p-item"><span class="s7-p-lbl">Licencia Ultimate</span><div class="s7-p-row"><span class="s7-p-pfx">USD</span><input class="s7-p-inp" id="p_lic" type="number" step="100" value="6090" oninput="s7Recalc()"></div></div>
+          </div>
+        </div>
+
+        <!-- Tabs dashboard -->
+        <div class="s7-tabs">
+          <button class="s7-tab active" onclick="s7ShowTab('resumen',this)">Resumen flota</button>
+          <button class="s7-tab" onclick="s7ShowTab('ranking',this)">Ranking</button>
+          <button class="s7-tab" onclick="s7ShowTab('detalle',this)">Por máquina</button>
+        </div>
+
+        <!-- Resumen -->
+        <div class="s7-view active" id="s7v-resumen">
+          <div class="s7-kpi-grid" id="s7-kpi-flota"></div>
+          <div class="s7-chart-card">
+            <div class="s7-chart-title">Adopción GSA por máquina (%)</div>
+            <div class="s7-chart-wrap" style="height:170px;"><canvas id="s7-chart-adopt"></canvas></div>
+          </div>
+          <div class="s7-perf3">
+            <div class="s7-chart-card">
+              <div class="s7-chart-title">Productividad (ha/hr)</div>
+              <div class="s7-legend"><div class="s7-leg"><div class="s7-leg-dot" style="background:var(--g);"></div>Con GSA</div><div class="s7-leg"><div class="s7-leg-dot" style="background:#444;"></div>Sin GSA</div></div>
+              <div class="s7-chart-wrap" style="height:130px;"><canvas id="s7-chart-prod"></canvas></div>
+              <div class="s7-delta" id="s7-delta-prod"></div>
+            </div>
+            <div class="s7-chart-card">
+              <div class="s7-chart-title">Throughput (tn/hr)</div>
+              <div class="s7-legend"><div class="s7-leg"><div class="s7-leg-dot" style="background:var(--g);"></div>Con GSA</div><div class="s7-leg"><div class="s7-leg-dot" style="background:#444;"></div>Sin GSA</div></div>
+              <div class="s7-chart-wrap" style="height:130px;"><canvas id="s7-chart-thru"></canvas></div>
+              <div class="s7-delta" id="s7-delta-thru"></div>
+            </div>
+            <div class="s7-chart-card">
+              <div class="s7-chart-title">Combustible (L/ha)</div>
+              <div class="s7-legend"><div class="s7-leg"><div class="s7-leg-dot" style="background:var(--g);"></div>Con GSA</div><div class="s7-leg"><div class="s7-leg-dot" style="background:#444;"></div>Sin GSA</div></div>
+              <div class="s7-chart-wrap" style="height:130px;"><canvas id="s7-chart-fuel"></canvas></div>
+              <div class="s7-delta" id="s7-delta-fuel"></div>
+            </div>
+          </div>
+          <div class="s7-chart-card">
+            <div class="s7-chart-title">Impacto económico por cliente (USD)</div>
+            <div class="s7-legend">
+              <div class="s7-leg"><div class="s7-leg-dot" style="background:#2D7A2D;"></div>Combustible</div>
+              <div class="s7-leg"><div class="s7-leg-dot" style="background:#378ADD;"></div>Productividad</div>
+              <div class="s7-leg"><div class="s7-leg-dot" style="background:#B87A0C;"></div>Calidad grano</div>
+            </div>
+            <div class="s7-chart-wrap" style="height:260px;"><canvas id="s7-chart-impact"></canvas></div>
+          </div>
+          <div style="font-size:9px;color:var(--wx);font-style:italic;margin-top:6px;" id="s7-note"></div>
+          <!-- Metodología -->
+          <div class="s7-chart-card" style="margin-top:8px;">
+            <div class="s7-chart-title">Base de cálculo — ¿De dónde surge el impacto económico?</div>
+            <div id="s7-met-content"></div>
+          </div>
+        </div>
+
+        <!-- Ranking -->
+        <div class="s7-view" id="s7v-ranking">
+          <div class="s7-filter-row">
+            <select id="s7-sort-col" onchange="s7RenderRanking()">
+              <option value="impacto">Ordenar: Impacto USD</option>
+              <option value="ha">Ordenar: Ha cosechadas</option>
+              <option value="adopt_gsa">Ordenar: Adopción GSA</option>
+              <option value="prod_pct">Ordenar: Productividad</option>
+              <option value="fuel_pct">Ordenar: Combustible</option>
+              <option value="recover">Ordenar: Recupero licencia</option>
+            </select>
+            <select id="s7-filt-mod" onchange="s7RenderRanking()">
+              <option value="">Todos los modelos</option>
+              <option value="S7 600">S7 600</option>
+              <option value="S7 700">S7 700</option>
+              <option value="S7 800">S7 800</option>
+              <option value="S7 900">S7 900</option>
+            </select>
+          </div>
+          <div class="s7-tbl-wrap" id="s7-rank-content"></div>
+          <div style="font-size:9px;color:var(--wx);font-style:italic;margin-top:6px;">Verde ≥70% adopción · Amarillo 40–69% · Rojo &lt;40%</div>
+        </div>
+
+        <!-- Detalle -->
+        <div class="s7-view" id="s7v-detalle">
+          <div class="s7-filter-row">
+            <input type="text" id="s7-search-cli" placeholder="Buscar cliente..." oninput="s7RenderDetalle()" style="width:180px;">
+            <select id="s7-filt-mod2" onchange="s7RenderDetalle()">
+              <option value="">Todos los modelos</option>
+              <option value="S7 600">S7 600</option>
+              <option value="S7 700">S7 700</option>
+              <option value="S7 800">S7 800</option>
+              <option value="S7 900">S7 900</option>
+            </select>
+          </div>
+          <div id="s7-det-content"></div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /screen-s7 -->
+</div><!-- /app -->
+
+<!-- Modal edición S7 -->
+<div class="s7-overlay" id="s7-modal-overlay" onclick="s7CloseModal(event)">
+  <div class="s7-modal">
+    <div class="s7-modal-title">Editar datos del cliente</div>
+    <div class="s7-modal-sub" id="s7-modal-serie"></div>
+    <div class="s7-modal-fld"><label class="s7-modal-lbl">Nombre del cliente</label><input class="s7-modal-inp" id="s7-modal-cliente" type="text"></div>
+    <div class="s7-modal-fld"><label class="s7-modal-lbl">Rinde promedio (tn/ha)</label><input class="s7-modal-inp" id="s7-modal-rinde" type="number" step="0.1"></div>
+    <div class="s7-modal-acts">
+      <button class="s7-btn-cancel" onclick="s7CloseModal()">Cancelar</button>
+      <button class="s7-btn-save" onclick="s7SaveModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="s7-toast" id="s7-toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CÓDIGO ORIGINAL DEL INDEX (sin cambios)
+// ════════════════════════════════════════════════════════════
+const JSON_URL = "https://raw.githubusercontent.com/aleregalini7488/isg-dashboard/main/isg_data.json";
+let DATA = null; let currentSuc = null; let currentTab = "indicadores";
+function semaforo(v,o){if(v===null||v===undefined||o===null||o===undefined)return"neutral";return v>=o?"green":v>=o*0.85?"yellow":"red";}
+const COL={green:"#6EE26E",yellow:"#F5C842",red:"#E05252",neutral:"#444",blue:"#7DC6FF"};
+const BG={green:"#0A1A0A",yellow:"#1A1500",red:"#1A0A0A",neutral:"#111",blue:"#0A1A3A"};
+const BORD={green:"#2D7A2D",yellow:"#3A2D00",red:"#3A1010",neutral:"#222",blue:"#1A3A6A"};
+function sc(st){return COL[st]||COL.neutral;}function sb(st){return BG[st]||BG.neutral;}
+function parseExcel(buffer){const wb=XLSX.read(buffer,{type:"array",cellDates:true});const rawCfg=XLSX.utils.sheet_to_json(wb.Sheets["CONFIG"],{header:1,defval:null});const config={};for(let i=2;i<rawCfg.length;i++)if(rawCfg[i][0])config[rawCfg[i][0]]=rawCfg[i][1];const rawSuc=XLSX.utils.sheet_to_json(wb.Sheets["SUCURSALES"],{header:1,defval:null});const trim=config.Trimestre_Activo||"Q3";const trimIdx={Q1:0,Q2:1,Q3:2,Q4:3}[trim]||2;const sucursales=[];for(let i=3;i<rawSuc.length;i++){const r=rawSuc[i];if(!r[0]||typeof r[0]!=="string")continue;const getObj=(base)=>r[base+trimIdx]||null;sucursales.push({id:i-2,nombre:r[0],ha_opp:r[1]||0,ha_conn:r[2]||0,pct_conn:typeof r[3]==="number"?r[3]:null,obj_conn:getObj(4),ha_heh:r[8]||0,pct_heh:typeof r[9]==="number"?r[9]:null,obj_heh:getObj(10),pct_cosecha:r[14]||null,obj_cosecha:getObj(15),pct_spray:r[19]||null,obj_spray:getObj(20),pct_sia:r[24]||null,obj_sia:getObj(25),pct_incpro:r[29]||null,obj_incpro:getObj(30),pct_ea:r[34]||null,obj_ea:getObj(35),pct_sc:r[39]||null,obj_sc:getObj(40),pct_autotrac:r[44]||null,obj_autotrac:getObj(45),semana:r[49]||""});}const rawDisp=XLSX.utils.sheet_to_json(wb.Sheets["DISPOSITIVOS"],{header:1,defval:null});const dispPorSuc={};const orgsPorSuc={};for(let i=2;i<rawDisp.length;i++){const r=rawDisp[i];if(!r[2]||r[0]==="TOTAL ISG")continue;const suc=r[2];if(!dispPorSuc[suc]){dispPorSuc[suc]={orgs:0,monitores:0,receptores:0,modems:0,modems_activos:0,total:0};orgsPorSuc[suc]=[];}dispPorSuc[suc].orgs++;dispPorSuc[suc].monitores+=r[5]||0;dispPorSuc[suc].receptores+=r[6]||0;dispPorSuc[suc].modems+=r[7]||0;dispPorSuc[suc].modems_activos+=r[8]||0;dispPorSuc[suc].total+=r[9]||0;orgsPorSuc[suc].push({id:r[0],nombre:r[1],ciudad:r[3],monitores:r[5]||0,receptores:r[6]||0,modems:r[7]||0,modems_activos:r[8]||0,total:r[9]||0});}const rawLic=XLSX.utils.sheet_to_json(wb.Sheets["LICENCIAS"],{header:1,defval:null});const licPorSuc={};for(let i=2;i<rawLic.length;i++){const r=rawLic[i];if(!r[0])continue;const suc=r[4];if(!licPorSuc[suc])licPorSuc[suc]=[];licPorSuc[suc].push({ns:r[0],modelo:r[1],org_id:r[2],org_nombre:r[3],sucursal:r[4],tipo:r[5],fecha_venc:r[6],dias:r[7],estado:r[8],accion:r[9]});}const wsCDE=wb.Sheets["CDE"];const cdeByOrg={};if(wsCDE){const rawCDE=XLSX.utils.sheet_to_json(wsCDE,{header:1,defval:null});for(let i=2;i<rawCDE.length;i++){const r=rawCDE[i];if(!r[0])continue;const orgId=String(r[0]).trim();cdeByOrg[orgId]={eng_level:r[1]||"",prom_r12:r[2]||0,risk_ha:r[3]||0,vca_setup:r[4]||"N",vca_workplan:r[5]||"N",vca_field:r[6]||"N",vca_equip:r[7]||"N",vca_work:r[8]||"N",vca_reports:r[9]||"N",vca_wp_created:r[10]||0,vca_wp_completed:r[11]||0,vca_files:r[12]||0,vca_no_boundary:r[13]||0,vca_no_auto_bnd:r[14]||0,vca_active_bnd:r[15]||0};}}const unassignedOrgs=[];for(let i=2;i<rawDisp.length;i++){const r=rawDisp[i];if(!r[0]||r[0]==="TOTAL ISG")continue;if(!r[2]||r[2]==="Sin asignar"||String(r[2]).trim()===""){unassignedOrgs.push({id:String(r[0]||"").trim(),nombre:r[1]||"",ciudad:r[3]||""}); }}return{sucursales,config,dispPorSuc,orgsPorSuc,licPorSuc,cdeByOrg,unassignedOrgs,trim};}
+function score(suc){const pairs=[[suc.pct_conn,suc.obj_conn],[suc.pct_heh,suc.obj_heh],[suc.pct_cosecha,suc.obj_cosecha],[suc.pct_spray,suc.obj_spray],[suc.pct_sia,suc.obj_sia],[suc.pct_incpro,suc.obj_incpro],[suc.pct_ea,suc.obj_ea],[suc.pct_sc,suc.obj_sc],[suc.pct_autotrac,suc.obj_autotrac]];let t=0,c=0;pairs.forEach(([v,o])=>{if(v!==null&&v!==undefined&&o!==null&&o!==undefined){t+=Math.max(0,o-v);c++;}});return c?t/c:0;}
+function urg(s){return s>15?"red":s>5?"yellow":"green";}
+function renderHome(){const{sucursales,config,dispPorSuc,trim}=DATA;const sorted=[...sucursales].sort((a,b)=>score(b)-score(a));const totalOrgs=Object.values(dispPorSuc).reduce((s,d)=>s+d.orgs,0);const enObj=sucursales.filter(s=>score(s)<=5).length;const html=`<div class="home-header"><div class="home-title">Dashboard<br><span>de Indicadores</span></div><div class="home-meta"><span class="home-badge">FY26 · ${trim}</span><span class="home-week">${config.Semana_Actual||""} · Act: ${config.Fecha_Actualizacion||""}</span></div></div><div class="score-strip"><div class="score-card"><div class="score-card-val" style="color:var(--g);">${sucursales.length}</div><div class="score-card-lbl">Sucursales</div></div><div class="score-card"><div class="score-card-val" style="color:var(--blue);">${totalOrgs.toLocaleString('es-AR')}</div><div class="score-card-lbl">Organizaciones</div></div><div class="score-card"><div class="score-card-val" style="color:var(--g);">${enObj}</div><div class="score-card-lbl">En objetivo</div></div></div><div class="suc-grid-label">Seleccioná una sucursal</div><div class="suc-grid">${sorted.map(suc=>{const scoreVal=score(suc);const u=urg(scoreVal);const stConn=semaforo(suc.pct_conn,suc.obj_conn);const stHeh=semaforo(suc.pct_heh,suc.obj_heh);const orgs=DATA.dispPorSuc[suc.nombre]?.orgs||0;const pctConn=suc.pct_conn!==null?suc.pct_conn.toFixed(1)+"%":"—";const pctHeh=suc.pct_heh!==null?suc.pct_heh.toFixed(1)+"%":"—";return`<div class="suc-home-card urg-${u}" onclick="openSuc(${suc.id})"><div class="shc-score" style="color:${sc(u)};">${scoreVal.toFixed(0)}</div><div class="shc-name">${suc.nombre}</div><div class="shc-kpis"><div class="shc-kpi"><div class="shc-kpi-val" style="color:${sc(stConn)};">${pctConn}</div><div class="shc-kpi-lbl">Ha Conn.</div></div><div class="shc-kpi"><div class="shc-kpi-val" style="color:${sc(stHeh)};">${pctHeh}</div><div class="shc-kpi-lbl">Alt. Conn.</div></div></div><div class="shc-bar"><div class="shc-bar-seg" style="background:${sc(stConn)};opacity:0.8;"></div><div class="shc-bar-seg" style="background:${sc(stHeh)};opacity:0.8;"></div><div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_cosecha,suc.obj_cosecha))};opacity:0.8;"></div><div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_spray,suc.obj_spray))};opacity:0.8;"></div><div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_sia,suc.obj_sia))};opacity:0.8;"></div><div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_sc,suc.obj_sc))};opacity:0.8;"></div></div><div class="shc-orgs">${orgs} organiz. · ${suc.ha_opp.toLocaleString('es-AR')} ha oport.</div></div>`;}).join("")}</div><div style="height:24px;"></div>`;document.getElementById("screen-home").innerHTML=html;}
+function renderSuc(id){const suc=DATA.sucursales.find(s=>s.id===id);if(!suc)return;currentSuc=id;const scoreVal=score(suc);const u=urg(scoreVal);const disp=DATA.dispPorSuc[suc.nombre]||{orgs:0,monitores:0,receptores:0,modems:0,modems_activos:0,total:0};const html=`<div class="suc-hero"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;"><div><div class="suc-hero-name">${suc.nombre}</div><div class="suc-hero-meta"><span class="suc-hero-badge" style="background:${sb(u)};color:${sc(u)};border:1px solid ${sc(u)}33;">${u==="red"?"⚠ Requiere atención":u==="yellow"?"~ Cerca del objetivo":"✓ En objetivo"}</span><span class="suc-hero-score">Score ${scoreVal.toFixed(1)} · ${DATA.trim}</span></div></div><button onclick="downloadSucursal(${suc.id})" style="background:#1A3A1A;border:1px solid #2D7A2D;color:#6EE26E;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">⬇ Excel</button></div></div><div class="summary-strip"><div class="sum-card"><div class="sum-val" style="color:var(--wm);">${suc.ha_opp.toLocaleString('es-AR')}</div><div class="sum-lbl">Ha Oportunidad</div></div><div class="sum-card"><div class="sum-val" style="color:var(--blue);">${disp.orgs}</div><div class="sum-lbl">Organizaciones</div><div class="sum-sub">${disp.total} dispositivos</div></div><div class="sum-card"><div class="sum-val" style="color:${sc(semaforo(suc.pct_conn,suc.obj_conn))};">${suc.pct_conn!==null?suc.pct_conn.toFixed(1)+"%":"—"}</div><div class="sum-lbl">Ha Conectadas</div><div class="sum-sub">obj ${suc.obj_conn||"—"}%</div></div></div><div class="tabs-wrap"><button class="tab-btn ${currentTab==="indicadores"?"active":""}" onclick="switchTab('indicadores')">Indicadores</button><button class="tab-btn ${currentTab==="organizaciones"?"active":""}" onclick="switchTab('organizaciones')">Organizaciones</button></div><div class="tab-content ${currentTab==="indicadores"?"active":""}" id="tab-indicadores">${buildTabIndicadores(suc)}</div><div class="tab-content ${currentTab==="organizaciones"?"active":""}" id="tab-organizaciones">${buildTabOrganizaciones(suc)}</div><div style="height:24px;"></div>`;document.getElementById("screen-suc").innerHTML=html;}
+function buildTabIndicadores(suc){const kpisA=[{lbl:"Ha Conectadas",val:suc.ha_conn,obj:null,unit:" ha"},{lbl:"% Ha Conn.",val:suc.pct_conn,obj:suc.obj_conn},{lbl:"Ha Alt. Conn.",val:suc.ha_heh,obj:null,unit:" ha"},{lbl:"% Ha Alt.",val:suc.pct_heh,obj:suc.obj_heh},{lbl:"Tec. Cosecha",val:suc.pct_cosecha,obj:suc.obj_cosecha},{lbl:"Spray Tech",val:suc.pct_spray,obj:suc.obj_spray}];const kpisU=[{lbl:"SIA",val:suc.pct_sia,obj:suc.obj_sia},{lbl:"INC PRO",val:suc.pct_incpro,obj:suc.obj_incpro},{lbl:"EA",val:suc.pct_ea,obj:suc.obj_ea},{lbl:"Section Ctrl.",val:suc.pct_sc,obj:suc.obj_sc},{lbl:"AutoTrac",val:suc.pct_autotrac,obj:suc.obj_autotrac}];const chipHtml=(k)=>{const unit=k.unit||"%";const st=semaforo(k.val,k.obj);const col=sc(st);const bg=sb(st);const disp=k.val===null||k.val===undefined?"—":`${typeof k.val==="number"?k.val.toFixed(unit===" ha"?0:1):k.val}${unit}`;const pct=k.obj&&k.val!==null?Math.min(100,Math.round((k.val/k.obj)*100)):0;return`<div class="ind-chip" style="background:${bg};border:1px solid ${col}22;"><div class="ind-chip-lbl">${k.lbl}</div><div class="ind-chip-val" style="color:${col};">${disp}</div>${k.obj?`<div class="ind-chip-obj">obj ${k.obj}${unit}</div><div class="ind-chip-bar"><div class="ind-chip-bar-fill" style="width:${pct}%;background:${col};"></div></div>`:""}</div>`;};const allK=[{lbl:"Ha Conectadas %",v:suc.pct_conn,o:suc.obj_conn,g:"ADOPTION"},{lbl:"Ha Alt. Conn. %",v:suc.pct_heh,o:suc.obj_heh,g:"ADOPTION"},{lbl:"Tec. Cosecha",v:suc.pct_cosecha,o:suc.obj_cosecha,g:"ADOPTION"},{lbl:"Spray Tech",v:suc.pct_spray,o:suc.obj_spray,g:"ADOPTION"},{lbl:"SIA",v:suc.pct_sia,o:suc.obj_sia,g:"UTIL"},{lbl:"INC PRO",v:suc.pct_incpro,o:suc.obj_incpro,g:"UTIL"},{lbl:"EA",v:suc.pct_ea,o:suc.obj_ea,g:"UTIL"},{lbl:"Section Control",v:suc.pct_sc,o:suc.obj_sc,g:"UTIL"},{lbl:"AutoTrac",v:suc.pct_autotrac,o:suc.obj_autotrac,g:"UTIL"}];const gaps=allK.filter(x=>x.o&&x.v!==null&&x.v!==undefined&&x.v<x.o).sort((a,b)=>(b.o-b.v)-(a.o-a.v));const enObj=allK.filter(x=>x.o&&x.v!==null&&x.v!==undefined&&x.v>=x.o);return`<div class="ind-section"><div class="ind-section-title"><div class="ind-badge" style="background:var(--gdk);border:1px solid var(--gd);color:var(--g);">ADOPTION</div><div class="ind-line"></div></div><div class="ind-grid">${kpisA.map(chipHtml).join("")}</div></div><div class="ind-section"><div class="ind-section-title"><div class="ind-badge" style="background:var(--yd);border:1px solid #3A2D00;color:var(--y);">UTILIZATION</div><div class="ind-line"></div></div><div class="ind-grid">${kpisU.map(chipHtml).join("")}</div></div>${gaps.length>0?`<div class="ind-section"><div class="ind-section-title"><div class="ind-badge" style="background:#1A0A0A;border:1px solid #3A1010;color:var(--r);">OPORTUNIDADES</div><div class="ind-line"></div></div><div class="opp-list">${gaps.map(x=>{const gap=x.o-x.v;const pct=Math.round((x.v/x.o)*100);const col=gap>15?"#E05252":"#F5C842";const gbg=x.g==="ADOPTION"?"#0A1A0A":"#1A1500";const gcol=x.g==="ADOPTION"?"#6EE26E":"#F5C842";return`<div class="opp-item"><span class="opp-tag" style="background:${gbg};color:${gcol};">${x.g}</span><span class="opp-name">${x.lbl}</span><div class="opp-right"><div class="opp-track"><div class="opp-track-fill" style="width:${pct}%;background:${col};"></div></div><span class="opp-nums">${x.v.toFixed(1)}% / ${x.o}%</span><span class="opp-gap" style="color:${col};">−${gap.toFixed(1)}%</span></div></div>`;}).join("")}</div></div>`:""}${enObj.length>0?`<div style="font-size:12px;color:var(--g);padding:8px 0;">✓ En objetivo: ${enObj.map(x=>x.lbl).join(", ")}</div>`:""}}`;}
+function buildTabOrganizaciones(suc){const orgs=DATA.orgsPorSuc[suc.nombre]||[];if(orgs.length===0)return`<div class="empty"><div class="empty-icon">🏢</div>Sin organizaciones registradas</div>`;const lics=DATA.licPorSuc[suc.nombre]||[];const licByOrg={};lics.forEach(l=>{if(!licByOrg[l.org_id])licByOrg[l.org_id]=[];licByOrg[l.org_id].push(l);});const sorted=[...orgs].sort((a,b)=>a.nombre.localeCompare(b.nombre));return`<input class="org-search" type="text" placeholder="🔍 Buscar organización o ciudad..." oninput="filterOrgs(this.value)" id="org-search"><div class="org-stats-row"><span class="org-stat"><strong>${orgs.length}</strong> organizaciones</span><span class="org-stat"><strong>${orgs.reduce((s,o)=>s+o.total,0)}</strong> dispositivos</span><span class="org-stat"><strong>${lics.length}</strong> licencias</span></div><div class="org-list" id="org-list">${sorted.map((o,i)=>buildOrgAccordion(o,licByOrg[o.id]||[],i)).join("")}</div>`;}
+function buildOrgAccordion(org,lics,idx){const estCol={"VENCIDA":"#E05252","CRÍTICA":"#E05252","PRÓXIMA":"#F5C842","ACTIVA":"#6EE26E","Sin fecha":"#888"};const estBg={"VENCIDA":"#1A0A0A","CRÍTICA":"#1A0A0A","PRÓXIMA":"#1A1500","ACTIVA":"#0A1A0A","Sin fecha":"#111"};const pctAct=org.modems>0?Math.round(org.modems_activos/org.modems*100):0;const modColor=pctAct>=50?"#6EE26E":pctAct>=25?"#F5C842":"#E05252";const licUrg=lics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA").length;const cde=DATA.cdeByOrg?DATA.cdeByOrg[String(org.id)]:null;const ENG_STYLE={"Highly Engaged":{bg:"#0A1A0A",col:"#6EE26E"},"Highly Engaged Retained":{bg:"#1A1500",col:"#F5C842"},"R12 Digitally Engaged":{bg:"#0A101A",col:"#7DC6FF"},"Land & Digital":{bg:"#1A0A1A",col:"#D4A0FF"}};const chips=[org.monitores>0?`<span class="org-chip has-data" title="Monitores">📺 ${org.monitores}</span>`:"",org.receptores>0?`<span class="org-chip has-data" title="Receptores">📡 ${org.receptores}</span>`:"",org.modems>0?`<span class="org-chip has-data" style="color:${modColor};border-color:${modColor}44;" title="${pctAct}% activos">📶 ${org.modems}</span>`:"",lics.length>0?`<span class="org-chip has-data" style="color:${licUrg>0?"#E05252":"#6EE26E"};border-color:${licUrg>0?"#E05252":"#6EE26E"}44;" title="Licencias">📋 ${lics.length}</span>`:"",cde?`<span class="org-chip has-data" style="color:${(ENG_STYLE[cde.eng_level]||{col:"#888"}).col};border-color:${(ENG_STYLE[cde.eng_level]||{col:"#888"}).col}44;" title="${cde.eng_level}">⭐ ${cde.prom_r12} VCA</span>`:""].filter(Boolean).join("");const dispPanel=`<div class="org-detail-section"><div class="org-detail-title">Dispositivos</div><div class="org-disp-grid"><div class="org-disp-card"><div class="org-disp-val">${org.monitores}</div><div class="org-disp-lbl">Monitores</div></div><div class="org-disp-card"><div class="org-disp-val">${org.receptores}</div><div class="org-disp-lbl">Receptores</div></div><div class="org-disp-card"><div class="org-disp-val">${org.modems}</div><div class="org-disp-lbl">Modems MTG</div></div></div>${org.modems>0?`<div class="org-modems-row"><div class="org-modems-pct" style="color:${modColor};">${pctAct}%</div><div class="org-modems-info">Modems activos<br><span style="font-size:10px;color:var(--wx);">${org.modems_activos} de ${org.modems} activos</span></div></div>`:""}</div>`;const cdePanel=cde?(()=>{const eng=ENG_STYLE[cde.eng_level]||{bg:"#111",col:"#888"};const promCol=cde.prom_r12>=4?"#6EE26E":"#E05252";const vcasYN=[{lbl:"Setup File",val:cde.vca_setup},{lbl:"Work Plan",val:cde.vca_workplan},{lbl:"Field/Bound.",val:cde.vca_field},{lbl:"Equip. Mon.",val:cde.vca_equip},{lbl:"Work Details",val:cde.vca_work},{lbl:"Reports",val:cde.vca_reports}];const vcasNum=[{lbl:"WP Created R12",val:cde.vca_wp_created},{lbl:"WP Completed R12",val:cde.vca_wp_completed},{lbl:"Files Uploaded",val:cde.vca_files},{lbl:"Campos s/Límite",val:cde.vca_no_boundary},{lbl:"s/AutoLímite",val:cde.vca_no_auto_bnd},{lbl:"c/Límite Activo",val:cde.vca_active_bnd}];return`<div class="org-detail-section"><div class="org-detail-title">Engagement & VCAs</div><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;"><span class="eng-badge" style="background:${eng.bg};color:${eng.col};border:1px solid ${eng.col}44;">${cde.eng_level}</span><div style="display:flex;align-items:center;gap:8px;background:var(--bb);border-radius:var(--r8);padding:6px 12px;border:1px solid var(--bd);"><span class="prom-r12-big" style="color:${promCol};">${cde.prom_r12}</span><div><div style="font-size:11px;color:${promCol};font-weight:600;">VCA R12</div><div style="font-size:9px;color:var(--ws);">mín. 4 requeridas</div></div></div>${cde.risk_ha>0?`<div style="background:#1A0A0A;border:1px solid #E0525244;border-radius:var(--r8);padding:6px 12px;"><div style="font-family:var(--font-mono);font-size:16px;font-weight:500;color:#E05252;">${cde.risk_ha.toFixed(1)} ha</div><div style="font-size:9px;color:#888;">Ha en riesgo</div></div>`:""}</div><div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Acciones completadas</div><div class="vca-grid" style="margin-bottom:12px;">${vcasYN.map(v=>{const isY=v.val==="Y";return`<div class="vca-chip" style="background:${isY?"#0A1A0A":"#1A0A0A"};border:1px solid ${isY?"#2D7A2D44":"#E0525244"};"><div class="vca-chip-val" style="color:${isY?"#6EE26E":"#E05252"};">${isY?"✓":"✗"}</div><div class="vca-chip-lbl">${v.lbl}</div></div>`;}).join("")}</div><div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Detalle de acciones (R12)</div><div class="vca-num-grid">${vcasNum.map(v=>{const isZero=v.val===0||v.val===null;return`<div class="vca-num-card" style="border-color:${isZero?"#E0525244":"var(--bd)"};"><div class="vca-num-val" style="color:${isZero?"#E05252":"#CCCCCC"};">${v.val}</div><div class="vca-num-lbl">${v.lbl}</div></div>`;}).join("")}</div></div>`;})():"";const licPanel=lics.length>0?`<div class="org-detail-section"><div class="org-detail-title">Licencias (${lics.length})</div><div class="org-lic-list">${[...lics].sort((a,b)=>(a.dias||9999)-(b.dias||9999)).map(l=>{const est=l.estado||"Sin fecha";const col=estCol[est]||"#888";const fv=l.fecha_venc?(l.fecha_venc instanceof Date?l.fecha_venc.toLocaleDateString("es-AR"):String(l.fecha_venc).slice(0,10)):"—";const dias=l.dias!==null&&l.dias!==undefined?l.dias:"—";return`<div class="org-lic-item" style="border-left-color:${col};"><div class="org-lic-ns">${l.ns||"—"}</div><div class="org-lic-tipo">${(l.tipo||"").split(" - ")[0]}</div><div class="org-lic-footer"><span class="org-lic-fecha">Vence: ${fv}</span><span class="org-lic-dias" style="color:${col};">${typeof dias==="number"?dias+" días":dias}</span><span class="org-lic-badge" style="background:${estBg[est]||"#111"};color:${col};">${est}</span></div></div>`;}).join("")}</div></div>`:"";return`<div class="org-accordion" id="org-acc-${idx}" data-nombre="${org.nombre.toLowerCase()}" data-ciudad="${(org.ciudad||"").toLowerCase()}"><div class="org-acc-header" onclick="toggleOrg(${idx})"><div class="org-acc-left"><div class="org-acc-name">${org.nombre}</div><div class="org-acc-city">${org.ciudad||"—"}</div></div><div class="org-acc-chips">${chips}</div><div class="org-acc-arrow">▼</div></div><div class="org-acc-body">${dispPanel}${cdePanel}${licPanel}</div></div>`;}
+let pendingAssignments={};
+function renderOrgs(sucNombre){const{sucursales,config}=DATA;const activeSuc=sucNombre||sucursales[0]?.nombre;const orgs=DATA.orgsPorSuc[activeSuc]||[];const lics=DATA.licPorSuc[activeSuc]||[];const licByOrg={};lics.forEach(l=>{if(!licByOrg[l.org_id])licByOrg[l.org_id]=[];licByOrg[l.org_id].push(l);});const sorted=[...orgs].sort((a,b)=>a.nombre.localeCompare(b.nombre));const unassigned=DATA.unassignedOrgs||[];const pendingCount=Object.keys(pendingAssignments).length;const html=`<div style="padding:16px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;"><div class="orgs-title">Organizaciones</div><div style="display:flex;gap:8px;align-items:center;">${unassigned.length>0?`<button onclick="toggleUnassigned()" id="btn-unassigned" style="background:#1A0A1A;border:1px solid #E0525244;color:#E05252;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">⚠ Sin sucursal (${unassigned.length})</button>`:""}${pendingCount>0?`<button onclick="exportAssignments()" style="background:#0A1A0A;border:1px solid #2D7A2D;color:#6EE26E;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">⬇ Exportar asignaciones (${pendingCount})</button>`:""}</div></div><div id="panel-unassigned" style="display:none;margin-bottom:16px;"><div style="background:#1A0A0A;border:1px solid #E0525244;border-radius:12px;overflow:hidden;"><div style="padding:12px 14px;border-bottom:1px solid #3A1010;display:flex;align-items:center;gap:8px;"><span style="font-size:12px;font-weight:700;color:#E05252;">Organizaciones sin sucursal asignada</span><span style="font-size:10px;color:#888;">${unassigned.length} orgs · asignales una sucursal y exportá</span></div><div style="max-height:400px;overflow-y:auto;">${unassigned.length===0?`<div style="padding:20px;text-align:center;color:#888;font-size:12px;">✓ Todas las organizaciones tienen sucursal asignada</div>`:unassigned.map((org,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2A1010;flex-wrap:wrap;" id="unasgn-${i}"><div style="flex:1;min-width:120px;"><div style="font-size:12px;font-weight:600;color:#fff;">${org.nombre}</div><div style="font-size:10px;color:#888;">${org.ciudad||"—"} · ID: ${org.id}</div></div><select onchange="assignOrg('${org.id}','${org.nombre.replace(/'/g,"\'")}','${org.ciudad||""}',this.value,${i})" style="background:#111;border:1px solid #333;color:#fff;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;min-width:140px;" id="sel-${i}"><option value="">— Elegir sucursal —</option>${sucursales.map(s=>`<option value="${s.nombre}" ${pendingAssignments[org.id]?.sucursal===s.nombre?"selected":""}>${s.nombre}</option>`).join("")}</select>${pendingAssignments[org.id]?`<span style="font-size:10px;color:#6EE26E;font-weight:600;">✓ ${pendingAssignments[org.id].sucursal}</span>`:""}</div>`).join("")}</div></div></div><div class="suc-selector" id="suc-selector">${sucursales.map(s=>`<button class="suc-sel-btn ${s.nombre===activeSuc?"active":""}" onclick="renderOrgs('${s.nombre}')">${s.nombre}</button>`).join("")}</div><input class="org-search" type="text" placeholder="🔍 Buscar organización o ciudad..." oninput="filterOrgsGlobal(this.value)" id="org-search-global"><div class="org-stats-row"><span class="org-stat"><strong>${orgs.length}</strong> organizaciones</span><span class="org-stat"><strong>${orgs.reduce((s,o)=>s+o.total,0)}</strong> dispositivos</span><span class="org-stat"><strong>${lics.length}</strong> licencias</span></div><div class="org-list" id="org-list-global">${sorted.length===0?`<div class="empty"><div class="empty-icon">🏢</div>Sin organizaciones registradas</div>`:sorted.map((o,i)=>buildOrgAccordion(o,licByOrg[o.id]||[],i)).join("")}</div><div style="height:24px;"></div></div>`;document.getElementById("screen-orgs").innerHTML=html;}
+function toggleUnassigned(){const panel=document.getElementById("panel-unassigned");if(panel)panel.style.display=panel.style.display==="none"?"block":"none";}
+function assignOrg(orgId,nombre,ciudad,sucursal,idx){if(!sucursal){delete pendingAssignments[orgId];}else{pendingAssignments[orgId]={id:orgId,nombre,ciudad,sucursal};}const row=document.getElementById("unasgn-"+idx);if(row){const badge=row.querySelector(".asgn-badge");if(sucursal){if(badge)badge.textContent="✓ "+sucursal;else row.insertAdjacentHTML("beforeend",`<span class="asgn-badge" style="font-size:10px;color:#6EE26E;font-weight:600;">✓ ${sucursal}</span>`);}else{if(badge)badge.remove();}}const count=Object.keys(pendingAssignments).length;const btn=document.querySelector("[onclick='exportAssignments()']");if(btn)btn.textContent=`⬇ Exportar asignaciones (${count})`;else if(count>0){const header=document.querySelector("#panel-unassigned").previousElementSibling;if(header)header.insertAdjacentHTML("beforeend",`<button onclick="exportAssignments()" style="background:#0A1A0A;border:1px solid #2D7A2D;color:#6EE26E;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">⬇ Exportar asignaciones (${count})</button>`);}}
+function exportAssignments(){const rows=[["ID Organización","Nombre Organización","Ciudad","Sucursal Asignada"]];Object.values(pendingAssignments).forEach(a=>{rows.push([a.id,a.nombre,a.ciudad||"",a.sucursal]);});const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:16},{wch:35},{wch:20},{wch:18}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Asignaciones");const fecha=new Date().toLocaleDateString("es-AR").replace(/\//g,"-");XLSX.writeFile(wb,`ISG_Asignaciones_Sucursal_${fecha}.xlsx`);}
+function filterOrgsGlobal(q){const items=document.querySelectorAll("#org-list-global .org-accordion");items.forEach(item=>{const match=item.dataset.nombre.includes(q.toLowerCase())||item.dataset.ciudad.includes(q.toLowerCase());item.style.display=match?"":"none";});}
+function filterOrgs(q){const items=document.querySelectorAll("#org-list .org-accordion");items.forEach(item=>{const match=item.dataset.nombre.includes(q.toLowerCase())||item.dataset.ciudad.includes(q.toLowerCase());item.style.display=match?"":"none";});}
+function toggleOrg(idx){const el=document.getElementById("org-acc-"+idx);if(el)el.classList.toggle("open");}
+function downloadSucursal(id){const suc=DATA.sucursales.find(s=>s.id===id);if(!suc)return;const trim=DATA.trim;const orgs=DATA.orgsPorSuc[suc.nombre]||[];const lics=DATA.licPorSuc[suc.nombre]||[];const wb=XLSX.utils.book_new();const kpis=[["KPI","Grupo","Valor","Objetivo "+trim,"Brecha","Estado"],["Ha Oportunidad","Adoption",suc.ha_opp,"—","—","—"],["Ha Conectadas (ha)","Adoption",suc.ha_conn,"—","—","—"],["% Ha Conectadas","Adoption",suc.pct_conn,suc.obj_conn,suc.pct_conn!==null&&suc.obj_conn?(suc.pct_conn-suc.obj_conn).toFixed(1):"—",suc.pct_conn!==null&&suc.obj_conn?(suc.pct_conn>=suc.obj_conn?"✓ En objetivo":suc.pct_conn>=suc.obj_conn*0.85?"~ Cerca":"✗ Bajo obj."):"—"]];const ws1=XLSX.utils.aoa_to_sheet(kpis);XLSX.utils.book_append_sheet(wb,ws1,"Indicadores");const orgHeaders=["ID Org","Nombre","Ciudad","Monitores","Receptores","Modems","Modems Activos","Total Disp.","Engagement Level","Prom R12 VCA"];const orgRows=[orgHeaders];orgs.forEach(org=>{const cde=DATA.cdeByOrg?DATA.cdeByOrg[String(org.id)]:null;orgRows.push([org.id,org.nombre,org.ciudad||"",org.monitores,org.receptores,org.modems,org.modems_activos||0,org.total,cde?cde.eng_level:"—",cde?cde.prom_r12:"—"]);});const ws2=XLSX.utils.aoa_to_sheet(orgRows);XLSX.utils.book_append_sheet(wb,ws2,"Organizaciones");const licHeaders=["Nro. Serie","Organización","Tipo Licencia","Fecha Vencimiento","Días para Vencer","Estado","Acción"];const licRows=[licHeaders];[...lics].sort((a,b)=>(a.dias||9999)-(b.dias||9999)).forEach(l=>{const fv=l.fecha_venc?(l.fecha_venc instanceof Date?l.fecha_venc.toLocaleDateString("es-AR"):String(l.fecha_venc).slice(0,10)):"—";licRows.push([l.ns||"",l.org_nombre||"",(l.tipo||"").split(" - ")[0],fv,l.dias||"",l.estado||"",l.accion||""]);});const ws3=XLSX.utils.aoa_to_sheet(licRows);XLSX.utils.book_append_sheet(wb,ws3,"Licencias");const fecha=new Date().toLocaleDateString("es-AR").replace(/\//g,"-");XLSX.writeFile(wb,`ISG_${suc.nombre.replace(/[\s.]/g,"_")}_${trim}_${fecha}.xlsx`);}
+function openSuc(id){currentTab="indicadores";renderSuc(id);document.getElementById("screen-home").classList.remove("active");document.getElementById("screen-suc").classList.add("active");document.getElementById("back-btn").classList.add("visible");window.scrollTo(0,0);}
+function goHome(){document.getElementById("screen-suc").classList.remove("active");document.getElementById("screen-orgs").classList.remove("active");document.getElementById("screen-s7").classList.remove("active");document.getElementById("screen-home").classList.add("active");document.getElementById("back-btn").classList.remove("visible");document.getElementById("orgs-nav-btn").style.color="";document.getElementById("s7-nav-btn").style.color="";window.scrollTo(0,0);}
+function switchTab(tab){currentTab=tab;document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));event.target.classList.add("active");document.getElementById("tab-"+tab).classList.add("active");}
+function goOrgs(){renderOrgs(null);document.getElementById("screen-home").classList.remove("active");document.getElementById("screen-suc").classList.remove("active");document.getElementById("screen-s7").classList.remove("active");document.getElementById("screen-orgs").classList.add("active");document.getElementById("back-btn").classList.add("visible");document.getElementById("orgs-nav-btn").style.color="var(--g)";document.getElementById("s7-nav-btn").style.color="";window.scrollTo(0,0);}
+function goS7(){document.getElementById("screen-home").classList.remove("active");document.getElementById("screen-suc").classList.remove("active");document.getElementById("screen-orgs").classList.remove("active");document.getElementById("screen-s7").classList.add("active");document.getElementById("back-btn").classList.add("visible");document.getElementById("s7-nav-btn").style.color="var(--g)";document.getElementById("orgs-nav-btn").style.color="";s7Init();window.scrollTo(0,0);}
+async function loadAndRender(){try{document.getElementById("load-sub").textContent="Cargando datos...";const resp=await fetch(JSON_URL+"?t="+Date.now());if(!resp.ok)throw new Error("HTTP "+resp.status);document.getElementById("load-sub").textContent="Procesando...";DATA=await resp.json();document.getElementById("loading").style.display="none";document.getElementById("app").style.display="block";document.getElementById("screen-home").classList.add("active");document.getElementById("back-btn").classList.remove("visible");renderHome();}catch(err){document.getElementById("loading").innerHTML=`<div style="text-align:center;padding:32px 24px;"><div style="color:#E05252;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px;">Sin conexión</div><div style="color:#888;font-size:12px;margin-bottom:24px;">${err.message}</div><button onclick="document.getElementById('fi').click()" style="background:#2D7A2D;border:none;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">📂 Cargar archivo (JSON o Excel)</button><input type="file" id="fi" accept=".xlsx" style="display:none;" onchange="loadLocal(event)"></div>`;}}
+function loadLocal(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();if(file.name.endsWith('.json')){r.onload=ev=>{try{DATA=JSON.parse(ev.target.result);showApp();}catch(err){alert("Error: "+err.message);}};r.readAsText(file);}else{r.onload=ev=>{try{DATA=parseExcel(ev.target.result);showApp();}catch(err){alert("Error: "+err.message);}};r.readAsArrayBuffer(file);}}
+function showApp(){document.getElementById("loading").style.display="none";document.getElementById("app").style.display="block";document.getElementById("screen-home").classList.add("active");document.getElementById("back-btn").classList.remove("visible");renderHome();}
+async function refreshData(){const btn=document.querySelector(".refresh-btn:last-child");btn.textContent="⟳";btn.style.color="var(--g)";try{const resp=await fetch(JSON_URL+"?t="+Date.now());if(!resp.ok)throw new Error();DATA=await resp.json();renderHome();if(currentSuc)renderSuc(currentSuc);}catch(e){}btn.textContent="↻";btn.style.color="";}
+const xlsxScript=document.createElement("script");xlsxScript.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";document.head.appendChild(xlsxScript);
+loadAndRender();
+
+// ════════════════════════════════════════════════════════════
+// CÓDIGO S7 — Dashboard Harvest Performance
+// ════════════════════════════════════════════════════════════
+const S7_BASE_DATA = [{"cliente": "Establecimiento Don Avelino", "serie": "1J0S790BES0160119", "modelo": "S7 900", "ha": 1156, "rinde": 3.0, "adopt_hsa": 92, "adopt_gsa": 37, "ha_gsa_on": 930, "ha_gsa_off": 226, "ha_hsa_on": 425, "ha_hsa_off": 731, "prod_on": 9.7, "prod_off": 8.5, "thru_on": 33.7, "thru_off": 28.3, "fuel_on": 7.6, "fuel_off": 8.5, "broken_on": 0.7, "broken_off": 1.2, "loss_on": 0.2, "loss_off": 0.3, "foreign_on": 1.5, "foreign_off": 1.8, "licencia_mixta": false}, {"cliente": "Establecimiento Don Avelino", "serie": "1J0S790BES0160136", "modelo": "S7 900", "ha": 711, "rinde": 3.0, "adopt_hsa": 82, "adopt_gsa": 53, "ha_gsa_on": 551, "ha_gsa_off": 159, "ha_hsa_on": 379, "ha_hsa_off": 332, "prod_on": 9.4, "prod_off": 7.7, "thru_on": 33.7, "thru_off": 20.9, "fuel_on": 8.9, "fuel_off": 9.8, "broken_on": 0.7, "broken_off": 0.7, "loss_on": 0.2, "loss_off": 0.2, "foreign_on": 0.9, "foreign_off": 3.4, "licencia_mixta": false}, {"cliente": "El Hinojo", "serie": "1J0S770BHS0160138", "modelo": "S7 700", "ha": 3082, "rinde": 4.0, "adopt_hsa": 83, "adopt_gsa": 27, "ha_gsa_on": 1650, "ha_gsa_off": 1431, "ha_hsa_on": 842, "ha_hsa_off": 2240, "prod_on": 8.6, "prod_off": 7.4, "thru_on": 24.4, "thru_off": 30.0, "fuel_on": 8.0, "fuel_off": 8.0, "broken_on": 1.1, "broken_off": 3.8, "loss_on": 0.4, "loss_off": 0.2, "foreign_on": 1.0, "foreign_off": 2.9, "licencia_mixta": false}, {"cliente": "El Hinojo", "serie": "1J0S770BKS0160180", "modelo": "S7 700", "ha": 1352, "rinde": 2.0, "adopt_hsa": 98, "adopt_gsa": 58, "ha_gsa_on": 1343, "ha_gsa_off": 9, "ha_hsa_on": 779, "ha_hsa_off": 573, "prod_on": 8.3, "prod_off": 6.4, "thru_on": 18.3, "thru_off": 12.0, "fuel_on": 8.0, "fuel_off": 9.1, "broken_on": 0.9, "broken_off": 0.3, "loss_on": 0.3, "loss_off": 0.3, "foreign_on": 0.7, "foreign_off": 0.3, "licencia_mixta": false}, {"cliente": "AGROPECUARIA 2000", "serie": "1J0S790BHS0160118", "modelo": "S7 900", "ha": 1933, "rinde": 6.0, "adopt_hsa": 43, "adopt_gsa": 68, "ha_gsa_on": 1927, "ha_gsa_off": 6, "ha_hsa_on": 1311, "ha_hsa_off": 622, "prod_on": 9.8, "prod_off": 6.5, "thru_on": 44.9, "thru_off": 50.1, "fuel_on": 8.5, "fuel_off": 11.0, "broken_on": 2.0, "broken_off": 2.7, "loss_on": 0.4, "loss_off": 0.5, "foreign_on": 2.1, "foreign_off": 1.5, "licencia_mixta": false}, {"cliente": "AGROPECUARIA 2000", "serie": "1J0S790BLS0160117", "modelo": "S7 900", "ha": 1574, "rinde": 4.0, "adopt_hsa": 99, "adopt_gsa": 47, "ha_gsa_on": 1538, "ha_gsa_off": 36, "ha_hsa_on": 746, "ha_hsa_off": 828, "prod_on": 10.1, "prod_off": 9.1, "thru_on": 41.5, "thru_off": 34.5, "fuel_on": 8.7, "fuel_off": 8.8, "broken_on": 1.1, "broken_off": 4.1, "loss_on": 0.3, "loss_off": 0.4, "foreign_on": 1.3, "foreign_off": 1.5, "licencia_mixta": false}, {"cliente": "koch eduardo", "serie": "1J0S770BJS0160147", "modelo": "S7 700", "ha": 682, "rinde": 3.0, "adopt_hsa": 97, "adopt_gsa": 54, "ha_gsa_on": 455, "ha_gsa_off": 227, "ha_hsa_on": 368, "ha_hsa_off": 314, "prod_on": 7.6, "prod_off": 5.5, "thru_on": 21.6, "thru_off": 13.1, "fuel_on": 9.0, "fuel_off": 10.1, "broken_on": 1.4, "broken_off": 1.9, "loss_on": 0.4, "loss_off": 0.4, "foreign_on": 0.9, "foreign_off": 0.6, "licencia_mixta": false}, {"cliente": "ABRATE FRANCISCO", "serie": "1J0S780BKT0160171", "modelo": "S7 800", "ha": 1915, "rinde": 3.0, "adopt_hsa": 98, "adopt_gsa": 63, "ha_gsa_on": 1675, "ha_gsa_off": 240, "ha_hsa_on": 1212, "ha_hsa_off": 702, "prod_on": 10.1, "prod_off": 8.1, "thru_on": 36.3, "thru_off": 24.7, "fuel_on": 8.6, "fuel_off": 8.9, "broken_on": 1.4, "broken_off": 2.7, "loss_on": 0.5, "loss_off": 0.7, "foreign_on": 3.0, "foreign_off": 3.7, "licencia_mixta": false}, {"cliente": "ROVERE ALBERTO", "serie": "1J0S780BHS0160114", "modelo": "S7 800", "ha": 1009, "rinde": 4.0, "adopt_hsa": 98, "adopt_gsa": 83, "ha_gsa_on": 953, "ha_gsa_off": 56, "ha_hsa_on": 839, "ha_hsa_off": 170, "prod_on": 8.4, "prod_off": 6.2, "thru_on": 35.8, "thru_off": 26.2, "fuel_on": 9.3, "fuel_off": 10.4, "broken_on": 1.7, "broken_off": 3.2, "loss_on": 0.4, "loss_off": 0.3, "foreign_on": 1.6, "foreign_off": 2.0, "licencia_mixta": false}, {"cliente": "STEINLE", "serie": "1J0S770BJS0160102", "modelo": "S7 700", "ha": 1648, "rinde": 3.0, "adopt_hsa": 97, "adopt_gsa": 9, "ha_gsa_on": 995, "ha_gsa_off": 653, "ha_hsa_on": 148, "ha_hsa_off": 1500, "prod_on": 8.4, "prod_off": 5.8, "thru_on": 17.8, "thru_off": 18.8, "fuel_on": 7.8, "fuel_off": 8.6, "broken_on": 0.7, "broken_off": 4.0, "loss_on": 0.4, "loss_off": 0.6, "foreign_on": 0.9, "foreign_off": 2.3, "licencia_mixta": false}, {"cliente": "El Paseño SA", "serie": "1J0S770BKS0160132", "modelo": "S7 700", "ha": 1061, "rinde": 5.0, "adopt_hsa": 65, "adopt_gsa": 54, "ha_gsa_on": 664, "ha_gsa_off": 397, "ha_hsa_on": 572, "ha_hsa_off": 489, "prod_on": 6.6, "prod_off": 4.8, "thru_on": 31.7, "thru_off": 26.4, "fuel_on": 9.5, "fuel_off": 11.7, "broken_on": 2.0, "broken_off": 1.2, "loss_on": 0.3, "loss_off": 0.3, "foreign_on": 2.4, "foreign_off": 3.4, "licencia_mixta": false}, {"cliente": "BRESSAN", "serie": "1J0S760BPS0160110", "modelo": "S7 600", "ha": 1218, "rinde": 6.0, "adopt_hsa": 99, "adopt_gsa": 72, "ha_gsa_on": 1179, "ha_gsa_off": 39, "ha_hsa_on": 878, "ha_hsa_off": 340, "prod_on": 5.0, "prod_off": 3.7, "thru_on": 28.0, "thru_off": 26.5, "fuel_on": 11.1, "fuel_off": 12.8, "broken_on": 2.3, "broken_off": 3.7, "loss_on": 0.4, "loss_off": 0.4, "foreign_on": 0.8, "foreign_off": 0.9, "licencia_mixta": false}, {"cliente": "Adrian Spoglia", "serie": "1J0S790BAS0160116", "modelo": "S7 900", "ha": 2518, "rinde": 5.0, "adopt_hsa": 92, "adopt_gsa": 27, "ha_gsa_on": 1278, "ha_gsa_off": 1240, "ha_hsa_on": 689, "ha_hsa_off": 1828, "prod_on": 9.3, "prod_off": 6.5, "thru_on": 40.0, "thru_off": 31.1, "fuel_on": 8.9, "fuel_off": 9.9, "broken_on": 1.8, "broken_off": 2.5, "loss_on": 0.4, "loss_off": 0.6, "foreign_on": 1.7, "foreign_off": 2.3, "licencia_mixta": false}, {"cliente": "INSAURRALDE POZZER", "serie": "1J0S770BLS0160106", "modelo": "S7 700", "ha": 2179, "rinde": 6.0, "adopt_hsa": 100, "adopt_gsa": 39, "ha_gsa_on": 670, "ha_gsa_off": 1509, "ha_hsa_on": 851, "ha_hsa_off": 1328, "prod_on": 5.0, "prod_off": 3.3, "thru_on": 24.2, "thru_off": 21.4, "fuel_on": 11.0, "fuel_off": 15.5, "broken_on": 4.4, "broken_off": 2.3, "loss_on": 0.5, "loss_off": 0.3, "foreign_on": 0.8, "foreign_off": 0.7, "licencia_mixta": false}, {"cliente": "Meyer Leandro Ricardo", "serie": "1J0S780BTS0160103", "modelo": "S7 800", "ha": 708, "rinde": 4.0, "adopt_hsa": 95, "adopt_gsa": 57, "ha_gsa_on": 633, "ha_gsa_off": 75, "ha_hsa_on": 401, "ha_hsa_off": 308, "prod_on": 7.3, "prod_off": 6.2, "thru_on": 29.0, "thru_off": 23.9, "fuel_on": 10.3, "fuel_off": 10.8, "broken_on": 2.0, "broken_off": 7.1, "loss_on": 0.4, "loss_off": 1.4, "foreign_on": 0.6, "foreign_off": 7.1, "licencia_mixta": false}, {"cliente": "AGUSMEL S.A.", "serie": "1J0S770BVS0160121", "modelo": "S7 700", "ha": 1191, "rinde": 4.0, "adopt_hsa": 97, "adopt_gsa": 51, "ha_gsa_on": 746, "ha_gsa_off": 444, "ha_hsa_on": 611, "ha_hsa_off": 579, "prod_on": 6.8, "prod_off": 5.5, "thru_on": 32.6, "thru_off": 20.8, "fuel_on": 9.4, "fuel_off": 9.4, "broken_on": 2.0, "broken_off": 2.4, "loss_on": 0.4, "loss_off": 0.5, "foreign_on": 1.5, "foreign_off": 1.2, "licencia_mixta": false}, {"cliente": "EL REFUGIO SRL", "serie": "1J0S770BPS0160176", "modelo": "S7 700", "ha": 880, "rinde": 2.0, "adopt_hsa": 94, "adopt_gsa": 29, "ha_gsa_on": 665, "ha_gsa_off": 215, "ha_hsa_on": 251, "ha_hsa_off": 629, "prod_on": 7.9, "prod_off": 7.6, "thru_on": 18.0, "thru_off": 13.5, "fuel_on": 8.5, "fuel_off": 8.1, "broken_on": 0.8, "broken_off": 1.0, "loss_on": 0.3, "loss_off": 0.3, "foreign_on": 0.7, "foreign_off": 0.9, "licencia_mixta": false}, {"cliente": "Agrored S.R.L", "serie": "1J0S770BJS0160150", "modelo": "S7 700", "ha": 2375, "rinde": 4.0, "adopt_hsa": 96, "adopt_gsa": 41, "ha_gsa_on": 1320, "ha_gsa_off": 1055, "ha_hsa_on": 966, "ha_hsa_off": 1409, "prod_on": 7.9, "prod_off": 6.1, "thru_on": 21.8, "thru_off": 25.1, "fuel_on": 8.3, "fuel_off": 9.3, "broken_on": 1.5, "broken_off": 4.0, "loss_on": 0.3, "loss_off": 0.5, "foreign_on": 1.2, "foreign_off": 2.1, "licencia_mixta": false}, {"cliente": "VAL-MAX", "serie": "1J0S780BPS0160121", "modelo": "S7 800", "ha": 861, "rinde": 6.0, "adopt_hsa": 90, "adopt_gsa": 65, "ha_gsa_on": 823, "ha_gsa_off": 38, "ha_hsa_on": 561, "ha_hsa_off": 300, "prod_on": 6.9, "prod_off": 5.3, "thru_on": 43.3, "thru_off": 32.5, "fuel_on": 10.0, "fuel_off": 11.3, "broken_on": 2.0, "broken_off": 3.3, "loss_on": 0.3, "loss_off": 0.4, "foreign_on": 1.2, "foreign_off": 2.5, "licencia_mixta": false}, {"cliente": "Vilme Iván y Adrián Frank", "serie": "1J0S780BTS0160134", "modelo": "S7 800", "ha": 1072, "rinde": 4.0, "adopt_hsa": 90, "adopt_gsa": 54, "ha_gsa_on": 744, "ha_gsa_off": 328, "ha_hsa_on": 574, "ha_hsa_off": 498, "prod_on": 8.9, "prod_off": 6.9, "thru_on": 29.6, "thru_off": 27.3, "fuel_on": 8.2, "fuel_off": 9.8, "broken_on": 1.4, "broken_off": 2.2, "loss_on": 0.4, "loss_off": 0.3, "foreign_on": 1.6, "foreign_off": 1.6, "licencia_mixta": false}, {"cliente": "MAINA JULIO CESAR", "serie": "1J0S780BCS0160102", "modelo": "S7 800", "ha": 1578, "rinde": 5.0, "adopt_hsa": 89, "adopt_gsa": 23, "ha_gsa_on": 534, "ha_gsa_off": 1044, "ha_hsa_on": 364, "ha_hsa_off": 1214, "prod_on": 7.4, "prod_off": 5.4, "thru_on": 32.2, "thru_off": 27.7, "fuel_on": 10.1, "fuel_off": 11.4, "broken_on": 1.2, "broken_off": 4.2, "loss_on": 0.6, "loss_off": 0.4, "foreign_on": 0.7, "foreign_off": 3.4, "licencia_mixta": false}, {"cliente": "Taborra Vanesa", "serie": "1J0S770BCS0160157", "modelo": "S7 700", "ha": 816, "rinde": 6.0, "adopt_hsa": 96, "adopt_gsa": 54, "ha_gsa_on": 390, "ha_gsa_off": 426, "ha_hsa_on": 438, "ha_hsa_off": 378, "prod_on": 6.4, "prod_off": 4.2, "thru_on": 29.8, "thru_off": 33.9, "fuel_on": 9.7, "fuel_off": 12.6, "broken_on": 1.8, "broken_off": 2.3, "loss_on": 0.3, "loss_off": 0.3, "foreign_on": 0.5, "foreign_off": 0.6, "licencia_mixta": true}, {"cliente": "Rothar Carlos Enrique", "serie": "1J0S770BAS0160167", "modelo": "S7 700", "ha": 1116, "rinde": 3.0, "adopt_hsa": 91, "adopt_gsa": 78, "ha_gsa_on": 1025, "ha_gsa_off": 91, "ha_hsa_on": 872, "ha_hsa_off": 244, "prod_on": 8.3, "prod_off": 5.7, "thru_on": 20.6, "thru_off": 16.3, "fuel_on": 7.6, "fuel_off": 8.9, "broken_on": 1.8, "broken_off": 2.3, "loss_on": 0.3, "loss_off": 0.3, "foreign_on": 0.8, "foreign_off": 5.8, "licencia_mixta": false}];
+
+let S7_MACHINES = [];
+try {
+  const s = localStorage.getItem('isg_s7_machines');
+  if (s) {
+    const p = JSON.parse(s);
+    const valid = p.filter(m => m.cliente && m.ha > 0 && m.prod_on > 0 && m.prod_off > 0 && m.fuel_on > 0 && m.fuel_off > 0);
+    S7_MACHINES = valid.length > 0 ? valid : S7_BASE_DATA;
+  } else {
+    S7_MACHINES = S7_BASE_DATA;
+  }
+} catch(e) { S7_MACHINES = S7_BASE_DATA; }
+
+const s7Save = () => { try { localStorage.setItem('isg_s7_machines', JSON.stringify(S7_MACHINES)); } catch(e){} };
+
+const s7GetP = () => ({
+  fuel: parseFloat(document.getElementById('p_fuel')?.value)||1.05,
+  tc:   parseFloat(document.getElementById('p_tc')?.value)||1391,
+  soja: parseFloat(document.getElementById('p_soja')?.value)||260,
+  serv: parseFloat(document.getElementById('p_serv')?.value)||108,
+  lic:  parseFloat(document.getElementById('p_lic')?.value)||6090,
+});
+
+function s7CalcImpact(m, p) {
+  const fuelUSD   = (m.fuel_off - m.fuel_on) * m.ha_gsa_on * p.fuel;
+  const prodD_ha  = m.prod_on > 0 ? ((m.prod_on - m.prod_off) * p.serv) / m.prod_on : 0;
+  const prodUSD   = prodD_ha * m.ha_gsa_on;
+  const grainUSD  = Math.max(0, m.broken_off - m.broken_on) / 100 * m.rinde * 1000 * (p.soja/1000) * m.ha_hsa_on;
+  const total     = fuelUSD + prodUSD + grainUSD;
+  const denom     = (m.fuel_off - m.fuel_on) * p.fuel + prodD_ha;
+  const rec_comb  = denom > 0 ? p.lic / denom : 9999;
+  return { fuelUSD, prodUSD, grainUSD, total, rec_comb, prodD_ha, fuelSave_ha: m.fuel_off - m.fuel_on };
+}
+
+const s7AdoptColor = p => p>=70?'#6EE26E':p>=40?'#F5C842':'#E05252';
+const s7AdoptBadge = p => `<span class="s7-badge ${p>=70?'s7-bg':p>=40?'s7-ba':'s7-br'}">${p}%</span>`;
+
+function s7Toast(msg, dur=2500) {
+  const t = document.getElementById('s7-toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function s7ShowTab(v, btn) {
+  document.querySelectorAll('.s7-view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.s7-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('s7v-' + v).classList.add('active');
+  btn.classList.add('active');
+}
+
+function s7ShowDash() { s7RenderDash(); }
+function s7Recalc()   { if (document.getElementById('screen-s7').classList.contains('active')) s7RenderDash(); }
+
+function s7UpdateTable() {
+  const tbody = document.getElementById('s7-tbody');
+  if (!tbody) return;
+  document.getElementById('s7-cnt').textContent = S7_MACHINES.length;
+  if (!S7_MACHINES.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:16px;color:var(--wx);">Sin datos</td></tr>'; return; }
+  tbody.innerHTML = S7_MACHINES.map((m,i) => `<tr>
+    <td style="font-weight:600;color:var(--wm);">${m.cliente}${m.licencia_mixta?` <span class="s7-badge s7-ba">Mixta</span>`:''}</td>
+    <td><span class="s7-badge s7-bjd">${m.modelo}</span></td>
+    <td style="font-family:var(--font-mono);">${m.ha.toLocaleString('es-AR')}</td>
+    <td>${s7AdoptBadge(m.adopt_gsa)}</td>
+    <td>${s7AdoptBadge(m.adopt_hsa)}</td>
+    <td style="font-family:var(--font-mono);">${m.prod_on.toFixed(1)}</td>
+    <td style="font-family:var(--font-mono);">${m.prod_off.toFixed(1)}</td>
+    <td style="font-family:var(--font-mono);">${m.fuel_on.toFixed(1)}</td>
+    <td style="font-family:var(--font-mono);">${m.fuel_off.toFixed(1)}</td>
+    <td>
+      <button class="act-btn" onclick="s7OpenModal(${i})" title="Editar">✏️</button>
+      <button class="act-btn del" onclick="s7DelMachine(${i})" title="Eliminar">✕</button>
+    </td>
+  </tr>`).join('');
+}
+
+function s7DelMachine(i) { S7_MACHINES.splice(i,1); s7Save(); s7UpdateTable(); s7Toast('Máquina eliminada'); }
+function s7ResetCache() { if(confirm('Limpiar caché y volver a datos base?')){ localStorage.removeItem('isg_s7_machines'); S7_MACHINES = [...S7_BASE_DATA]; s7UpdateTable(); s7Toast('Cache limpiado'); } }
+
+const S7_CSV_HEADERS = ['cliente','serie','modelo','ha','rinde','adopt_hsa','adopt_gsa','ha_gsa_on','ha_gsa_off','ha_hsa_on','ha_hsa_off','prod_on','prod_off','thru_on','thru_off','fuel_on','fuel_off','broken_on','broken_off','loss_on','loss_off','foreign_on','foreign_off','licencia_mixta'];
+function s7ExportCSV() {
+  const rows = S7_MACHINES.map(m => S7_CSV_HEADERS.map(h => m[h]??'').join(','));
+  const csv = [S7_CSV_HEADERS.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'isg_s7_datos.csv'; a.click();
+  s7Toast('CSV exportado');
+}
+function s7ImportCSV() { document.getElementById('s7-csv-inp').click(); }
+function s7HandleCSV(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const lines = ev.target.result.split('\n').filter(Boolean);
+    const headers = lines[0].split(',');
+    const imported = lines.slice(1).map(line => {
+      const vals = line.split(','); const obj = {};
+      headers.forEach((h,i) => { obj[h.trim()] = isNaN(vals[i]) ? vals[i] : parseFloat(vals[i]); });
+      obj.id = Date.now() + Math.random(); return obj;
+    }).filter(m => m.cliente && m.ha > 0);
+    S7_MACHINES = [...S7_MACHINES, ...imported.filter(im => !S7_MACHINES.find(m => m.serie===im.serie))];
+    s7Save(); s7UpdateTable(); s7Toast(`✓ ${imported.length} registros importados`);
+  };
+  reader.readAsText(file); e.target.value='';
+}
+
+let s7Charts = {};
+function s7RenderDash() {
+  const p = s7GetP();
+  const has = S7_MACHINES.length > 0;
+  document.getElementById('s7-dash-empty').style.display  = has ? 'none' : 'block';
+  document.getElementById('s7-dash-content').style.display = has ? 'block' : 'none';
+  if (!has) return;
+  // KPIs
+  const totalHa  = S7_MACHINES.reduce((a,m)=>a+m.ha, 0);
+  const totalImp = S7_MACHINES.reduce((a,m)=>a+s7CalcImpact(m,p).total, 0);
+  const avgGSA   = Math.round(S7_MACHINES.reduce((a,m)=>a+m.adopt_gsa,0)/S7_MACHINES.length);
+  const avgHSA   = Math.round(S7_MACHINES.reduce((a,m)=>a+m.adopt_hsa,0)/S7_MACHINES.length);
+  const haOpp    = S7_MACHINES.reduce((a,m)=>a+m.ha_gsa_off, 0);
+  const avgProd  = (S7_MACHINES.reduce((a,m)=>a+(m.prod_off>0?(m.prod_on-m.prod_off)/m.prod_off*100:0),0)/S7_MACHINES.length).toFixed(1);
+  const avgFuel  = (S7_MACHINES.reduce((a,m)=>a+(m.fuel_off>0?(m.fuel_off-m.fuel_on)/m.fuel_off*100:0),0)/S7_MACHINES.length).toFixed(1);
+  document.getElementById('s7-kpi-flota').innerHTML = `
+    <div class="s7-kpi"><div class="s7-kpi-lbl">Máquinas</div><div class="s7-kpi-val">${S7_MACHINES.length}</div></div>
+    <div class="s7-kpi"><div class="s7-kpi-lbl">Ha cosechadas</div><div class="s7-kpi-val">${totalHa.toLocaleString('es-AR')}</div></div>
+    <div class="s7-kpi"><div class="s7-kpi-lbl">Impacto estimado</div><div class="s7-kpi-val green">USD ${Math.round(totalImp).toLocaleString('es-AR')}</div><div class="s7-kpi-sub">ARS ${Math.round(totalImp*p.tc/1000000).toFixed(1)}M</div></div>
+    <div class="s7-kpi"><div class="s7-kpi-lbl">Adopción GSA prom.</div><div class="s7-kpi-val ${avgGSA>=60?'green':avgGSA>=40?'amber':'red'}">${avgGSA}%</div><div class="s7-kpi-sub">HSA: ${avgHSA}%</div></div>
+    <div class="s7-kpi"><div class="s7-kpi-lbl">Ha sin GSA</div><div class="s7-kpi-val red">${haOpp.toLocaleString('es-AR')}</div><div class="s7-kpi-sub">oportunidad</div></div>
+    <div class="s7-kpi"><div class="s7-kpi-lbl">Mejora productividad</div><div class="s7-kpi-val green">+${avgProd}%</div><div class="s7-kpi-sub">combustible: -${avgFuel}%</div></div>`;
+  // Charts
+  const avg = fn => S7_MACHINES.reduce((a,m)=>a+fn(m),0)/S7_MACHINES.length;
+  const avgProdOn=avg(m=>m.prod_on), avgProdOff=avg(m=>m.prod_off);
+  const avgThruOn=avg(m=>m.thru_on), avgThruOff=avg(m=>m.thru_off);
+  const avgFuelOn=avg(m=>m.fuel_on), avgFuelOff=avg(m=>m.fuel_off);
+  if (s7Charts.adopt) s7Charts.adopt.destroy();
+  const s1 = S7_MACHINES.slice().sort((a,b)=>b.adopt_gsa-a.adopt_gsa);
+  s7Charts.adopt = new Chart(document.getElementById('s7-chart-adopt'), {
+    type:'bar', data:{labels:s1.map(m=>m.cliente.split(' ')[0]),datasets:[{label:'GSA%',data:s1.map(m=>m.adopt_gsa),backgroundColor:s1.map(m=>s7AdoptColor(m.adopt_gsa)),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:9},color:'#888'}},x:{ticks:{font:{size:9},maxRotation:45,color:'#888'}},}}
+  });
+  const perfOpts = unit => ({
+    type:'bar', data:{labels:['Con GSA','Sin GSA'],datasets:[{data:[0,0],backgroundColor:['#2D7A2D','#333'],borderRadius:5,barThickness:44}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw.toFixed(1)} ${unit}`}}},
+      scales:{y:{beginAtZero:true,ticks:{font:{size:9},color:'#888'},grid:{color:'#1E1E1E'}},x:{ticks:{font:{size:10},color:'#888'}}}}
+  });
+  ['prod','thru','fuel'].forEach(k=>{if(s7Charts[k])s7Charts[k].destroy();});
+  const prodCfg=perfOpts('ha/hr'); prodCfg.data.datasets[0].data=[parseFloat(avgProdOn.toFixed(2)),parseFloat(avgProdOff.toFixed(2))];
+  s7Charts.prod=new Chart(document.getElementById('s7-chart-prod'),prodCfg);
+  const thruCfg=perfOpts('tn/hr'); thruCfg.data.datasets[0].data=[parseFloat(avgThruOn.toFixed(2)),parseFloat(avgThruOff.toFixed(2))];
+  s7Charts.thru=new Chart(document.getElementById('s7-chart-thru'),thruCfg);
+  const fuelCfg=perfOpts('L/ha'); fuelCfg.data.datasets[0].data=[parseFloat(avgFuelOn.toFixed(2)),parseFloat(avgFuelOff.toFixed(2))];
+  s7Charts.fuel=new Chart(document.getElementById('s7-chart-fuel'),fuelCfg);
+  const setDelta=(id,txt,col)=>{const el=document.getElementById(id);if(el){el.textContent=txt;el.style.color=col;}};
+  const pd=avgProdOff>0&&avgProdOn>0?((avgProdOn-avgProdOff)/avgProdOff*100).toFixed(1):null;
+  setDelta('s7-delta-prod',pd?`+${pd}% con GSA activada`:'Sin datos',pd?'#6EE26E':'#888');
+  const td=avgThruOff>0&&avgThruOn>0?((avgThruOn-avgThruOff)/avgThruOff*100).toFixed(1):null;
+  setDelta('s7-delta-thru',td?`+${td}% con GSA activada`:'Sin datos',td?'#6EE26E':'#888');
+  const fd=avgFuelOff>0&&avgFuelOn>0?((avgFuelOff-avgFuelOn)/avgFuelOff*100).toFixed(1):null;
+  setDelta('s7-delta-fuel',fd?`-${fd}% con GSA activada`:'Sin datos',fd?'#6EE26E':'#888');
+  if (s7Charts.impact) s7Charts.impact.destroy();
+  const si = S7_MACHINES.slice().sort((a,b)=>s7CalcImpact(b,p).total-s7CalcImpact(a,p).total);
+  s7Charts.impact = new Chart(document.getElementById('s7-chart-impact'), {
+    type:'bar', data:{labels:si.map(m=>m.cliente.split(' ')[0]),datasets:[
+      {label:'Combustible',data:si.map(m=>Math.round(s7CalcImpact(m,p).fuelUSD)),backgroundColor:'#2D7A2D',borderRadius:2,stack:'s'},
+      {label:'Productividad',data:si.map(m=>Math.round(s7CalcImpact(m,p).prodUSD)),backgroundColor:'#378ADD',borderRadius:2,stack:'s'},
+      {label:'Calidad',data:si.map(m=>Math.round(s7CalcImpact(m,p).grainUSD)),backgroundColor:'#B87A0C',borderRadius:2,stack:'s'}
+    ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:45,color:'#888'},grid:{color:'#1E1E1E'}},y:{stacked:true,ticks:{callback:v=>'$'+Math.round(v/1000)+'k',font:{size:9},color:'#888'},grid:{color:'#1E1E1E'}}}}
+  });
+  // Nota
+  const mn=S7_MACHINES.length;
+  const noteEl=document.getElementById('s7-note');
+  if(noteEl) noteEl.textContent=`Fuente: John Deere Operations Center · ${mn} máquinas · Campaña 2026`;
+  // Metodología
+  s7RenderMetodologia(p);
+  // Ranking y detalle
+  s7RenderRanking(); s7RenderDetalle();
+}
+
+function s7RenderMetodologia(p) {
+  const el = document.getElementById('s7-met-content'); if (!el) return;
+  const avgFS=(S7_MACHINES.reduce((a,m)=>a+(m.fuel_off-m.fuel_on),0)/S7_MACHINES.length).toFixed(1);
+  const avgPO=(S7_MACHINES.reduce((a,m)=>a+m.prod_on,0)/S7_MACHINES.length).toFixed(1);
+  const avgPF=(S7_MACHINES.reduce((a,m)=>a+m.prod_off,0)/S7_MACHINES.length).toFixed(1);
+  const avgBD=(S7_MACHINES.reduce((a,m)=>a+Math.max(0,m.broken_off-m.broken_on),0)/S7_MACHINES.length).toFixed(2);
+  const avgR=(S7_MACHINES.reduce((a,m)=>a+m.rinde,0)/S7_MACHINES.length).toFixed(1);
+  el.innerHTML=`<div class="s7-met">
+    <div class="s7-met-item" style="border-color:#2D7A2D;">
+      <div class="s7-met-title" style="color:#6EE26E;">1 · Ahorro combustible</div>
+      <div class="s7-met-body"><b style="color:var(--wm);">Fuente:</b> Operations Center — Fuel Consumption GSA On vs Off<br><b style="color:var(--wm);">Fórmula:</b> <span class="s7-mono">(L/ha OFF − L/ha ON) × ha_gsa_on × USD/L</span><br><b style="color:var(--wm);">Promedio flota:</b> ${avgFS} L/ha · USD ${p.fuel}/L<br>Ref: FACMA</div>
+    </div>
+    <div class="s7-met-item" style="border-color:#378ADD;">
+      <div class="s7-met-title" style="color:#7DC6FF;">2 · Productividad adicional</div>
+      <div class="s7-met-body"><b style="color:var(--wm);">Fórmula:</b> <span class="s7-mono">(Δha/hr × USD_serv) / ha/hr_on × ha_gsa_on</span><br><b style="color:var(--wm);">Promedio:</b> ${avgPO} ha/hr (ON) vs ${avgPF} ha/hr (OFF)<br>Contratista = más ha/día. Productor = ventana climática corta<br>USD ${p.serv}/ha · Ref: FACMA</div>
+    </div>
+    <div class="s7-met-item" style="border-color:#B87A0C;">
+      <div class="s7-met-title" style="color:#F5C842;">3 · Calidad de grano (partido)</div>
+      <div class="s7-met-body"><b style="color:var(--wm);">Fórmula:</b> <span class="s7-mono">Δbroken% × rinde_kg × precio/1000 × ha_hsa_on</span><br><b style="color:var(--wm);">Promedio:</b> ${avgBD}% mejora · Rinde ${avgR} tn/ha<br>USD ${p.soja}/tn · Ref: Bolsa de Comercio de Rosario</div>
+    </div>
+    <div class="s7-met-item" style="border-color:#444;grid-column:1/-1;">
+      <div class="s7-met-title" style="color:#888;">Recupero licencia Ultimate — USD ${p.lic.toLocaleString('es-AR')}</div>
+      <div class="s7-met-body"><b style="color:var(--wm);">Fórmula:</b> <span class="s7-mono">ha_recupero = precio_lic / (USD_fuel/ha + USD_prod/ha)</span><br>Superado ese umbral, el impacto adicional es ganancia neta.</div>
+    </div>
+  </div>
+  <div style="font-size:9px;color:var(--wx);font-style:italic;margin-top:8px;">Fuentes: JD Operations Center · FACMA · BCR · Estimaciones sobre datos reales de campo.</div>`;
+}
+
+function s7RenderRanking() {
+  const p=s7GetP();
+  const col=document.getElementById('s7-sort-col')?.value||'impacto';
+  const fmod=document.getElementById('s7-filt-mod')?.value||'';
+  let data=S7_MACHINES.filter(m=>!fmod||m.modelo===fmod).map(m=>{
+    const imp=s7CalcImpact(m,p);
+    return{...m,...imp,prod_pct:m.prod_off>0?Math.round((m.prod_on-m.prod_off)/m.prod_off*100):0,fuel_pct:m.fuel_off>0?Math.round((m.fuel_off-m.fuel_on)/m.fuel_off*100):0};
+  });
+  if(col==='impacto')data.sort((a,b)=>b.total-a.total);
+  else if(col==='ha')data.sort((a,b)=>b.ha-a.ha);
+  else if(col==='adopt_gsa')data.sort((a,b)=>b.adopt_gsa-a.adopt_gsa);
+  else if(col==='prod_pct')data.sort((a,b)=>b.prod_pct-a.prod_pct);
+  else if(col==='fuel_pct')data.sort((a,b)=>b.fuel_pct-a.fuel_pct);
+  else if(col==='recover')data.sort((a,b)=>a.rec_comb-b.rec_comb);
+  const el=document.getElementById('s7-rank-content');
+  if(!el)return;
+  const rows=data.map((m,i)=>`<tr>
+    <td style="font-weight:700;color:var(--ws);">#${i+1}</td>
+    <td style="font-weight:600;color:var(--wm);">${m.cliente}${m.licencia_mixta?` <span class="s7-badge s7-ba">Mixta</span>`:''}</td>
+    <td><span class="s7-badge s7-bjd">${m.modelo}</span></td>
+    <td style="font-family:var(--font-mono);">${m.ha.toLocaleString('es-AR')} ha</td>
+    <td>${s7AdoptBadge(m.adopt_gsa)} / ${s7AdoptBadge(m.adopt_hsa)}</td>
+    <td><span class="s7-badge s7-bg">+${m.prod_pct}%</span></td>
+    <td>${m.fuel_pct>0?`<span class="s7-badge s7-bg">-${m.fuel_pct}%</span>`:m.fuel_pct<0?`<span class="s7-badge s7-br">+${Math.abs(m.fuel_pct)}%</span>`:'—'}</td>
+    <td style="font-weight:700;color:var(--g);font-family:var(--font-mono);">USD ${Math.round(m.total).toLocaleString('es-AR')}</td>
+    <td style="font-family:var(--font-mono);">${Math.round(m.rec_comb).toLocaleString('es-AR')} ha</td>
+  </tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>#</th><th>Cliente</th><th>Modelo</th><th>Ha</th><th>Adopción</th><th>Productividad</th><th>Combustible</th><th>Impacto USD</th><th>Recupero lic.</th></tr></thead><tbody>${rows||'<tr><td colspan="9" style="text-align:center;padding:14px;color:var(--wx);">Sin datos</td></tr>'}</tbody></table>`;
+}
+
+function s7RenderDetalle() {
+  const p=s7GetP();
+  const search=(document.getElementById('s7-search-cli')?.value||'').toLowerCase();
+  const fmod=document.getElementById('s7-filt-mod2')?.value||'';
+  const data=S7_MACHINES.filter(m=>(!search||m.cliente.toLowerCase().includes(search)||m.serie.toLowerCase().includes(search))&&(!fmod||m.modelo===fmod));
+  const el=document.getElementById('s7-det-content');if(!el)return;
+  if(!data.length){el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div>Sin resultados</div>';return;}
+  el.innerHTML=data.map(m=>{
+    const imp=s7CalcImpact(m,p);
+    const pd=m.prod_off>0?Math.round((m.prod_on-m.prod_off)/m.prod_off*100):0;
+    const td=m.thru_off>0?Math.round((m.thru_on-m.thru_off)/m.thru_off*100):0;
+    const fd=m.fuel_off>0?Math.round((m.fuel_off-m.fuel_on)/m.fuel_off*100):0;
+    const bDelta=(m.broken_on-m.broken_off).toFixed(1);
+    return`<div class="s7-mcard">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
+        <div><div class="s7-mcard-name">${m.cliente}${m.licencia_mixta?' <span class="s7-badge s7-ba">Lic. mixta</span>':''}</div>
+        <div class="s7-mcard-meta">${m.modelo} · ${m.serie} · ${m.ha.toLocaleString('es-AR')} ha · Rinde ${m.rinde} tn/ha</div></div>
+        <span class="s7-badge s7-bjd" style="font-size:11px;padding:4px 9px;">${m.modelo}</span>
+      </div>
+      <div class="s7-adopt-row">
+        <div class="s7-ai"><div class="s7-ai-name">Automatización vel. de avance (GSA)</div><div class="s7-ab-bg"><div class="s7-ab-fill" style="width:${m.adopt_gsa}%;background:${s7AdoptColor(m.adopt_gsa)};"></div></div><span style="font-family:var(--font-mono);font-size:12px;font-weight:700;">${m.adopt_gsa}%</span><span style="font-size:9px;color:var(--ws);"> · ${m.ha_gsa_on.toLocaleString('es-AR')} ha activas / ${m.ha_gsa_off.toLocaleString('es-AR')} sin activar</span></div>
+        <div class="s7-ai"><div class="s7-ai-name">Automatización ajustes cosecha (HSA)</div><div class="s7-ab-bg"><div class="s7-ab-fill" style="width:${m.adopt_hsa}%;background:${s7AdoptColor(m.adopt_hsa)};"></div></div><span style="font-family:var(--font-mono);font-size:12px;font-weight:700;">${m.adopt_hsa}%</span><span style="font-size:9px;color:var(--ws);"> · ${m.ha_hsa_on.toLocaleString('es-AR')} ha activas</span></div>
+      </div>
+      <div class="s7-perf-row">
+        <div class="s7-pi"><div class="s7-pi-lbl">Productividad</div><span class="s7-pi-on">${m.prod_on.toFixed(1)} ha/hr</span><span class="s7-pi-d s7-dg">+${pd}%</span><span class="s7-pi-off">vs ${m.prod_off.toFixed(1)} ha/hr sin aut.</span></div>
+        <div class="s7-pi"><div class="s7-pi-lbl">Throughput</div><span class="s7-pi-on">${m.thru_on.toFixed(1)} tn/hr</span><span class="s7-pi-d ${td>=0?'s7-dg':'s7-dr'}">${td>=0?'+':''}${td}%</span><span class="s7-pi-off">vs ${m.thru_off.toFixed(1)} tn/hr</span></div>
+        <div class="s7-pi"><div class="s7-pi-lbl">Combustible</div><span class="s7-pi-on">${m.fuel_on.toFixed(1)} L/ha</span><span class="s7-pi-d ${fd>=0?'s7-dg':'s7-dr'}">${fd>=0?'-':'+'}${Math.abs(fd)}%</span><span class="s7-pi-off">vs ${m.fuel_off.toFixed(1)} L/ha</span></div>
+        <div class="s7-pi"><div class="s7-pi-lbl">Grano partido (HSA)</div><span class="s7-pi-on">${m.broken_on.toFixed(1)}%</span><span class="s7-pi-d ${m.broken_on<=m.broken_off?'s7-dg':'s7-dr'}">${bDelta} pp</span><span class="s7-pi-off">vs ${m.broken_off.toFixed(1)}%</span></div>
+      </div>
+      <div class="s7-impact">
+        <div class="s7-impact-title">Impacto económico estimado</div>
+        <div class="s7-ig">
+          <div class="s7-ii"><div class="s7-ii-lbl">Ahorro combustible</div><div class="s7-ii-val">USD ${Math.round(imp.fuelUSD).toLocaleString('es-AR')}</div><div class="s7-ii-det">${imp.fuelSave_ha.toFixed(1)} L/ha · ${m.ha_gsa_on.toLocaleString('es-AR')} ha</div></div>
+          <div class="s7-ii"><div class="s7-ii-lbl">Productividad adicional</div><div class="s7-ii-val">USD ${Math.round(imp.prodUSD).toLocaleString('es-AR')}</div><div class="s7-ii-det">USD ${imp.prodD_ha.toFixed(1)}/ha</div></div>
+          <div class="s7-ii"><div class="s7-ii-lbl">Calidad grano (partido)</div><div class="s7-ii-val">USD ${Math.round(imp.grainUSD).toLocaleString('es-AR')}</div><div class="s7-ii-det">${m.ha_hsa_on.toLocaleString('es-AR')} ha con HSA</div></div>
+        </div>
+        <div class="s7-total">
+          <span style="font-size:10px;color:var(--ws);">Total campaña:</span>
+          <span style="font-family:var(--font-title);font-size:20px;font-weight:800;color:var(--g);">USD ${Math.round(imp.total).toLocaleString('es-AR')}</span>
+          <span style="font-size:9px;color:var(--wx);">ARS ${Math.round(imp.total*p.tc).toLocaleString('es-AR')}</span>
+        </div>
+        <div class="s7-rec">
+          <div class="s7-rec-title">Recupero licencia Ultimate — USD ${p.lic.toLocaleString('es-AR')}</div>
+          <div class="s7-rec-items">
+            <span class="s7-rec-item">Combustible: ${Math.round(p.lic/Math.max(.001,imp.fuelSave_ha*p.fuel)).toLocaleString('es-AR')} ha</span>
+            <span class="s7-rec-item">Productividad: ${Math.round(p.lic/Math.max(.001,imp.prodD_ha)).toLocaleString('es-AR')} ha</span>
+            <span class="s7-rec-item" style="font-weight:700;color:var(--g);">Combinado: ${Math.round(imp.rec_comb).toLocaleString('es-AR')} ha ✓</span>
+          </div>
+        </div>
+        ${m.licencia_mixta?'<div class="s7-warn">⚠ Licencia mixta detectada. Oportunidad de conversión a Ultimate completa.</div>':''}
+        ${m.adopt_gsa<40?`<div class="s7-warn">⚠ Adopción GSA baja (${m.adopt_gsa}%). ${m.ha_gsa_off.toLocaleString('es-AR')} ha sin aprovechar automatización.</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Modal S7
+let s7EditIdx = -1;
+function s7OpenModal(i) {
+  s7EditIdx=i; const m=S7_MACHINES[i];
+  document.getElementById('s7-modal-cliente').value=m.cliente;
+  document.getElementById('s7-modal-rinde').value=m.rinde;
+  document.getElementById('s7-modal-serie').textContent=`${m.modelo} · ${m.serie}`;
+  document.getElementById('s7-modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('s7-modal-cliente').focus(),150);
+}
+function s7CloseModal(e) { if(e&&e.target!==document.getElementById('s7-modal-overlay'))return; document.getElementById('s7-modal-overlay').classList.remove('open'); s7EditIdx=-1; }
+function s7SaveModal() {
+  if(s7EditIdx<0)return;
+  const name=document.getElementById('s7-modal-cliente').value.trim();
+  const rinde=parseFloat(document.getElementById('s7-modal-rinde').value)||S7_MACHINES[s7EditIdx].rinde;
+  if(!name){s7Toast('El nombre no puede estar vacío');return;}
+  S7_MACHINES[s7EditIdx].cliente=name; S7_MACHINES[s7EditIdx].rinde=rinde;
+  s7Save(); s7UpdateTable();
+  document.getElementById('s7-modal-overlay').classList.remove('open'); s7EditIdx=-1;
+  s7Toast('✓ Cliente actualizado');
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){s7CloseModal();} });
+
+function s7Init() {
+  s7UpdateTable();
+  s7RenderDash();
+}
+
+// Cargar Chart.js
+const chartScript = document.createElement('script');
+chartScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+document.head.appendChild(chartScript);
+</script>
+</body>
+</html>
