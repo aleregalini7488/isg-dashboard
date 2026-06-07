@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ISG · Agronorte</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* John Deere palette */
+  --g: #367C2B; --gd: #2D6B24; --gdk: #0D1F0B; --g-bright: #4CAF3F;
+  --y: #FFDE00; --yd: #1A1500; --y-dark: #B89F00;
+  --r: #D94040; --rd: #1A0A0A;
+  --b: #1A1A1A; --bb: #111111; --bs: #1E1E1E;
+  --bd: #2A2A2A; --bt: #333333;
+  --w: #FFFFFF; --wm: #DDDDDD; --ws: #888888; --wx: #555555;
+  --blue: #7DC6FF; --blued: #0A1A3A;
+  --font-title: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r8: 8px; --r12: 12px; --r16: 16px; --r20: 20px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; }
+body { background:var(--bb); color:var(--w); font-family:var(--font-body); overflow-x:hidden; }
+button { cursor:pointer; font-family:inherit; border:none; }
+a { color:inherit; text-decoration:none; }
+
+/* ── LOADING ── */
+#loading { position:fixed; inset:0; background:var(--bb); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; gap:20px; }
+.spin { width:36px; height:36px; border:2px solid var(--bd); border-top-color:var(--g); border-radius:50%; animation:spin 0.7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.load-title { font-family:var(--font-title); font-size:20px; color:var(--g); letter-spacing:-0.02em; }
+.load-sub { font-size:12px; color:var(--ws); }
+
+/* ── APP SHELL ── */
+#app { display:none; min-height:100vh; }
+
+/* ── TOP BAR ── */
+.topbar { position:sticky; top:0; z-index:200; background:#1A1A1A; border-bottom:3px solid var(--y); }
+.topbar-inner { display:flex; align-items:center; gap:12px; padding:0 16px; height:56px; }
+.topbar-logo { width:5px; height:26px; background:var(--y); border-radius:2px; flex-shrink:0; }
+.topbar-title { font-family:var(--font-title); font-size:16px; font-weight:800; letter-spacing:-0.01em; flex:1; color:var(--w); }
+.topbar-sub { font-size:10px; color:var(--ws); }
+.back-btn { display:none; align-items:center; gap:6px; background:var(--g); border:none; color:var(--w); border-radius:var(--r8); padding:8px 16px; font-size:13px; font-weight:700; }
+.back-btn.visible { display:flex; }
+.refresh-btn { background:none; border:1px solid var(--bd); color:var(--ws); border-radius:var(--r8); padding:6px 10px; font-size:18px; line-height:1; transition:all 0.2s; }
+.refresh-btn:hover { border-color:var(--y); color:var(--y); }
+
+/* ── SCREEN SYSTEM ── */
+.screen { display:none; }
+.screen.active { display:block; animation:fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ══════════════════════════════════════════════
+   SCREEN: HOME
+══════════════════════════════════════════════ */
+#screen-home { padding:16px; }
+
+.home-header { margin-bottom:20px; }
+.home-title { font-family:var(--font-title); font-size:26px; font-weight:800; letter-spacing:-0.03em; line-height:1.1; }
+.home-title span { color:var(--g); }
+.home-meta { display:flex; gap:12px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+.home-badge { font-size:11px; background:var(--g); color:var(--y); border-radius:20px; padding:4px 12px; font-weight:700; }
+.home-week { font-size:11px; color:var(--ws); }
+
+/* Score resumen */
+.score-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+.score-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:16px; text-align:center; border-top:3px solid var(--y); }
+.score-card-val { font-family:var(--font-mono); font-size:28px; font-weight:700; color:var(--y); }
+.score-card-lbl { font-size:10px; color:var(--ws); text-transform:uppercase; letter-spacing:0.08em; margin-top:4px; }
+
+/* Sucursal grid */
+.suc-grid-label { font-size:10px; color:var(--ws); text-transform:uppercase; letter-spacing:0.08em; font-weight:600; margin-bottom:10px; }
+.suc-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+@media(min-width:600px){ .suc-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .suc-grid { grid-template-columns:repeat(4,1fr); } }
+
+.suc-home-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:16px; cursor:pointer; transition:all 0.18s; position:relative; overflow:hidden; }
+.suc-home-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; border-radius:var(--r12) var(--r12) 0 0; }
+.suc-home-card:active { transform:scale(0.97); }
+.suc-home-card:hover { border-color:var(--y); transform:translateY(-2px); box-shadow:0 4px 20px rgba(255,222,0,0.1); }
+.suc-home-card.urg-red::before { background:var(--r); }
+.suc-home-card.urg-yellow::before { background:var(--y); }
+.suc-home-card.urg-green::before { background:var(--g); }
+
+.shc-name { font-family:var(--font-title); font-size:14px; font-weight:700; margin-bottom:10px; line-height:1.2; }
+.shc-kpis { display:flex; gap:6px; margin-bottom:10px; }
+.shc-kpi { flex:1; }
+.shc-kpi-val { font-family:var(--font-mono); font-size:16px; font-weight:500; }
+.shc-kpi-lbl { font-size:8px; color:var(--ws); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; }
+.shc-bar { display:flex; gap:2px; margin-top:6px; }
+.shc-bar-seg { flex:1; height:4px; border-radius:2px; }
+.shc-score { position:absolute; top:12px; right:12px; font-family:var(--font-mono); font-size:11px; font-weight:700; background:var(--bb); border-radius:20px; padding:2px 8px; }
+.shc-orgs { font-size:10px; color:var(--wx); margin-top:6px; }
+
+/* ══════════════════════════════════════════════
+   SCREEN: SUCURSAL
+══════════════════════════════════════════════ */
+#screen-suc { padding:0; }
+
+/* Hero */
+.suc-hero { padding:20px 16px 0; position:relative; }
+.suc-hero-name { font-family:var(--font-title); font-size:28px; font-weight:800; letter-spacing:-0.03em; line-height:1.1; }
+.suc-hero-name span { color:var(--g); }
+.suc-hero-meta { display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; align-items:center; }
+.suc-hero-badge { font-size:10px; border-radius:20px; padding:3px 10px; font-weight:700; }
+.suc-hero-score { font-family:var(--font-mono); font-size:11px; color:var(--ws); }
+
+/* Summary strip */
+.summary-strip { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:14px 16px; }
+@media(min-width:500px){ .summary-strip { grid-template-columns:repeat(4,1fr); } }
+.sum-card { background:var(--bs); border-radius:var(--r8); padding:10px 12px; border:1px solid var(--bd); }
+.sum-val { font-family:var(--font-mono); font-size:18px; font-weight:500; }
+.sum-lbl { font-size:9px; color:var(--ws); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
+.sum-sub { font-size:9px; color:var(--wx); margin-top:1px; }
+
+/* Tabs */
+.tabs-wrap { border-bottom:2px solid var(--bd); padding:0 16px; display:flex; gap:0; overflow-x:auto; -webkit-overflow-scrolling:touch; position:sticky; top:56px; background:var(--bb); z-index:100; }
+.tabs-wrap::-webkit-scrollbar { display:none; }
+.tab-btn { padding:14px 20px; font-size:13px; font-weight:700; color:var(--ws); border-bottom:3px solid transparent; white-space:nowrap; background:none; transition:all 0.15s; letter-spacing:0.01em; }
+.tab-btn.active { color:var(--y); border-bottom-color:var(--y); }
+
+.tab-content { display:none; padding:16px; }
+.tab-content.active { display:block; animation:fadeIn 0.2s ease; }
+
+/* ── TAB: INDICADORES ── */
+.ind-section { margin-bottom:20px; }
+.ind-section-title { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.ind-badge { padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.04em; }
+.ind-line { flex:1; height:1px; background:var(--bd); }
+.ind-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+@media(min-width:500px){ .ind-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .ind-grid { grid-template-columns:repeat(4,1fr); } }
+
+.ind-chip { border-radius:var(--r8); padding:10px 12px; }
+.ind-chip-lbl { font-size:9px; color:var(--ws); text-transform:uppercase; letter-spacing:0.05em; font-family:var(--font-mono); }
+.ind-chip-val { font-family:var(--font-mono); font-size:20px; font-weight:500; margin:2px 0; }
+.ind-chip-obj { font-size:9px; color:var(--ws); }
+.ind-chip-bar { height:3px; background:var(--bt); border-radius:2px; margin-top:6px; }
+.ind-chip-bar-fill { height:3px; border-radius:2px; }
+
+/* Opp list */
+.opp-list { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+.opp-item { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r8); padding:10px 12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.opp-tag { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+.opp-name { font-size:12px; color:var(--w); flex:1; min-width:80px; }
+.opp-right { display:flex; align-items:center; gap:8px; }
+.opp-track { width:50px; height:5px; background:var(--bt); border-radius:3px; }
+.opp-track-fill { height:5px; border-radius:3px; }
+.opp-nums { font-family:var(--font-mono); font-size:11px; color:var(--w); font-weight:500; white-space:nowrap; }
+.opp-gap { font-size:11px; font-weight:700; white-space:nowrap; }
+
+/* ══════════════════════════════════════════════
+   SCREEN: ORGANIZACIONES
+══════════════════════════════════════════════ */
+#screen-orgs { padding:16px; }
+.orgs-header { margin-bottom:16px; }
+.orgs-title { font-family:var(--font-title); font-size:22px; font-weight:800; letter-spacing:-0.02em; }
+.orgs-title span { color:var(--g); }
+
+/* Selector sucursal */
+.suc-selector { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; margin-bottom:14px; }
+.suc-selector::-webkit-scrollbar { display:none; }
+.suc-sel-btn { padding:6px 14px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; border:1px solid var(--bd); background:var(--bs); color:var(--ws); transition:all 0.15s; flex-shrink:0; }
+.suc-sel-btn.active { background:var(--gdk); border-color:var(--gd); color:var(--g); }
+
+/* Búsqueda y stats */
+.org-search { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r8); padding:9px 14px; width:100%; color:var(--w); font-size:13px; outline:none; margin-bottom:8px; font-family:var(--font-body); }
+.org-search:focus { border-color:var(--gd); }
+.org-search::placeholder { color:var(--wx); }
+.org-stats-row { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+.org-stat { font-size:11px; color:var(--ws); }
+.org-stat strong { color:var(--wm); }
+
+/* Acordeón de organizaciones */
+.org-list { display:flex; flex-direction:column; gap:6px; }
+
+.org-accordion { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); overflow:hidden; transition:border-color 0.2s; }
+.org-accordion.open { border-color:var(--gd); }
+
+.org-acc-header { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; }
+.org-acc-header:active { opacity:0.8; }
+.org-acc-left { flex:1; min-width:0; }
+.org-acc-name { font-size:13px; font-weight:600; color:var(--w); }
+.org-acc-city { font-size:10px; color:var(--ws); margin-top:1px; }
+.org-acc-chips { display:flex; gap:5px; flex-shrink:0; }
+.org-chip { font-size:10px; font-family:var(--font-mono); background:var(--bb); border:1px solid var(--bd); border-radius:6px; padding:3px 8px; color:var(--wm); cursor:pointer; transition:all 0.15s; }
+.org-chip:hover { border-color:var(--blue); color:var(--blue); }
+.org-chip.has-data { border-color:var(--bt); }
+.org-acc-arrow { font-size:12px; color:var(--ws); transition:transform 0.2s; flex-shrink:0; }
+.org-accordion.open .org-acc-arrow { transform:rotate(180deg); }
+
+/* Panel expandido */
+.org-acc-body { display:none; border-top:1px solid var(--bd); }
+.org-accordion.open .org-acc-body { display:block; animation:fadeIn 0.2s ease; }
+
+.org-detail-section { padding:12px 14px; border-bottom:1px solid var(--bd); }
+.org-detail-section:last-child { border-bottom:none; }
+.org-detail-title { font-size:10px; color:var(--ws); text-transform:uppercase; letter-spacing:0.07em; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.org-detail-title::after { content:''; flex:1; height:1px; background:var(--bd); }
+
+/* Dispositivos en acordeón */
+.org-disp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.org-disp-card { background:var(--bb); border:1px solid var(--bd); border-radius:var(--r8); padding:8px 10px; text-align:center; }
+.org-disp-val { font-family:var(--font-mono); font-size:18px; font-weight:500; color:var(--blue); }
+.org-disp-lbl { font-size:8px; color:var(--ws); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
+
+/* Modems activos badge */
+.org-modems-row { display:flex; align-items:center; gap:10px; background:var(--bb); border-radius:var(--r8); padding:8px 12px; margin-top:8px; border:1px solid var(--bd); }
+.org-modems-pct { font-family:var(--font-mono); font-size:20px; font-weight:500; }
+.org-modems-info { font-size:11px; color:var(--ws); }
+
+/* Licencias en acordeón */
+.org-lic-list { display:flex; flex-direction:column; gap:5px; }
+.org-lic-item { background:var(--bb); border-radius:var(--r8); padding:8px 10px; border-left:2px solid transparent; }
+.org-lic-ns { font-family:var(--font-mono); font-size:9px; color:var(--wx); }
+.org-lic-tipo { font-size:11px; color:var(--wm); margin:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.org-lic-footer { display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
+.org-lic-fecha { font-size:10px; color:var(--ws); }
+.org-lic-dias { font-family:var(--font-mono); font-size:11px; font-weight:700; }
+.org-lic-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; margin-left:auto; }
+
+/* ── CDE ENGAGEMENT ── */
+.eng-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; }
+.vca-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:8px; }
+@media(min-width:500px){ .vca-grid { grid-template-columns:repeat(6,1fr); } }
+.vca-chip { border-radius:6px; padding:6px 4px; text-align:center; }
+.vca-chip-val { font-size:14px; font-weight:700; }
+.vca-chip-lbl { font-size:8px; color:var(--ws); margin-top:2px; line-height:1.2; }
+.vca-num-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+@media(min-width:500px){ .vca-num-grid { grid-template-columns:repeat(3,1fr); } }
+.vca-num-card { background:var(--bb); border-radius:6px; padding:7px 8px; border:1px solid var(--bd); }
+.vca-num-val { font-family:var(--font-mono); font-size:16px; font-weight:500; }
+.vca-num-lbl { font-size:8px; color:var(--ws); margin-top:1px; line-height:1.2; }
+.risk-row { display:flex; align-items:center; gap:10px; background:var(--bb); border-radius:var(--r8); padding:8px 12px; margin-top:8px; border:1px solid var(--bd); }
+.prom-r12-big { font-family:var(--font-mono); font-size:28px; font-weight:500; }
+.empty { text-align:center; padding:40px 20px; color:var(--wx); font-size:13px; }
+.empty-icon { font-size:32px; margin-bottom:8px; }
+
+/* ── ERROR ── */
+.err-box { background:var(--rd); border:1px solid var(--r); border-radius:var(--r12); padding:20px; text-align:center; margin:16px; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spin"></div>
+  <div class="load-title">ISG · Agronorte</div>
+  <div class="load-sub" id="load-sub">Cargando datos...</div>
+</div>
+
+<div id="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-logo"></div>
+      <div style="flex:1;">
+        <div class="topbar-title">ISG · Agronorte</div>
+      </div>
+      <button class="back-btn" id="back-btn" onclick="goHome()">← Sucursales</button>
+      <button class="refresh-btn" onclick="refreshData()" title="Actualizar">↻</button>
+    </div>
+  </div>
+
+  <!-- SCREEN HOME -->
+  <div class="screen active" id="screen-home"></div>
+
+  <!-- SCREEN SUCURSAL -->
+  <div class="screen" id="screen-suc"></div>
+
+  <!-- SCREEN ORGANIZACIONES -->
+  <div class="screen" id="screen-orgs"></div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const JSON_URL = "https://raw.githubusercontent.com/aleregalini7488/isg-dashboard/main/isg_data.json";
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let DATA = null;
+let currentSuc = null;
+let currentTab = "indicadores";
+
+// ── COLORES ───────────────────────────────────────────────────────────────────
+function semaforo(v, o) {
+  if (v===null||v===undefined||o===null||o===undefined) return "neutral";
+  return v>=o ? "green" : v>=o*0.85 ? "yellow" : "red";
+}
+const COL  = {green:"#6EE26E", yellow:"#F5C842", red:"#E05252", neutral:"#444", blue:"#7DC6FF"};
+const BG   = {green:"#0A1A0A", yellow:"#1A1500", red:"#1A0A0A", neutral:"#111", blue:"#0A1A3A"};
+const BORD = {green:"#2D7A2D", yellow:"#3A2D00", red:"#3A1010", neutral:"#222", blue:"#1A3A6A"};
+function sc(st){ return COL[st]||COL.neutral; }
+function sb(st){ return BG[st]||BG.neutral; }
+
+// ── PARSE EXCEL ───────────────────────────────────────────────────────────────
+function parseExcel(buffer) {
+  const wb = XLSX.read(buffer, {type:"array", cellDates:true});
+
+  // CONFIG
+  const rawCfg = XLSX.utils.sheet_to_json(wb.Sheets["CONFIG"], {header:1, defval:null});
+  const config = {};
+  for(let i=2;i<rawCfg.length;i++) if(rawCfg[i][0]) config[rawCfg[i][0]]=rawCfg[i][1];
+
+  // SUCURSALES
+  const rawSuc = XLSX.utils.sheet_to_json(wb.Sheets["SUCURSALES"], {header:1, defval:null});
+  const trim = config.Trimestre_Activo || "Q3";
+  const trimIdx = {Q1:0,Q2:1,Q3:2,Q4:3}[trim]||2;
+
+  const sucursales = [];
+  for(let i=3;i<rawSuc.length;i++){
+    const r=rawSuc[i];
+    if(!r[0]||typeof r[0]!=="string") continue;
+    const getObj = (base) => r[base+trimIdx]||null;
+    sucursales.push({
+      id:i-2, nombre:r[0],
+      ha_opp:r[1]||0, ha_conn:r[2]||0,
+      pct_conn: typeof r[3]==="number"?r[3]:null,
+      obj_conn: getObj(4),
+      ha_heh:r[8]||0,
+      pct_heh: typeof r[9]==="number"?r[9]:null,
+      obj_heh: getObj(10),
+      pct_cosecha:r[14]||null, obj_cosecha:getObj(15),
+      pct_spray:r[19]||null,   obj_spray:getObj(20),
+      pct_sia:r[24]||null,     obj_sia:getObj(25),
+      pct_incpro:r[29]||null,  obj_incpro:getObj(30),
+      pct_ea:r[34]||null,      obj_ea:getObj(35),
+      pct_sc:r[39]||null,      obj_sc:getObj(40),
+      pct_autotrac:r[44]||null,obj_autotrac:getObj(45),
+      semana:r[49]||"",
+    });
+  }
+
+  // DISPOSITIVOS por sucursal
+  const rawDisp = XLSX.utils.sheet_to_json(wb.Sheets["DISPOSITIVOS"], {header:1, defval:null});
+  const dispPorSuc = {};
+  const orgsPorSuc = {}; // lista de orgs por sucursal
+  for(let i=2;i<rawDisp.length;i++){
+    const r=rawDisp[i];
+    if(!r[2]||r[0]==="TOTAL ISG") continue;
+    const suc=r[2];
+    if(!dispPorSuc[suc]) { dispPorSuc[suc]={orgs:0,monitores:0,receptores:0,modems:0,modems_activos:0,total:0}; orgsPorSuc[suc]=[]; }
+    dispPorSuc[suc].orgs++;
+    dispPorSuc[suc].monitores += r[5]||0;
+    dispPorSuc[suc].receptores+= r[6]||0;
+    dispPorSuc[suc].modems    += r[7]||0;
+    dispPorSuc[suc].modems_activos += r[8]||0;
+    dispPorSuc[suc].total     += r[9]||0;
+    orgsPorSuc[suc].push({
+      id:r[0], nombre:r[1], ciudad:r[3],
+      monitores:r[5]||0, receptores:r[6]||0, modems:r[7]||0, modems_activos:r[8]||0, total:r[9]||0
+    });
+  }
+
+  // LICENCIAS por sucursal
+  const rawLic = XLSX.utils.sheet_to_json(wb.Sheets["LICENCIAS"], {header:1, defval:null});
+  const licPorSuc = {};
+  for(let i=2;i<rawLic.length;i++){
+    const r=rawLic[i];
+    if(!r[0]) continue;
+    const suc=r[4];
+    if(!licPorSuc[suc]) licPorSuc[suc]=[];
+    licPorSuc[suc].push({ns:r[0],modelo:r[1],org_id:r[2],org_nombre:r[3],sucursal:r[4],tipo:r[5],fecha_venc:r[6],dias:r[7],estado:r[8],accion:r[9]});
+  }
+
+  // CDE — Engagement y VCAs por org
+  const wsCDE = wb.Sheets["CDE"];
+  const cdeByOrg = {};
+  if(wsCDE){
+    const rawCDE = XLSX.utils.sheet_to_json(wsCDE, {header:1, defval:null});
+    for(let i=2;i<rawCDE.length;i++){
+      const r=rawCDE[i];
+      if(!r[0]) continue;
+      const orgId = String(r[0]).trim();
+      cdeByOrg[orgId] = {
+        eng_level:      r[1]||"",
+        prom_r12:       r[2]||0,
+        risk_ha:        r[3]||0,
+        vca_setup:      r[4]||"N",
+        vca_workplan:   r[5]||"N",
+        vca_field:      r[6]||"N",
+        vca_equip:      r[7]||"N",
+        vca_work:       r[8]||"N",
+        vca_reports:    r[9]||"N",
+        vca_wp_created: r[10]||0,
+        vca_wp_completed:r[11]||0,
+        vca_files:      r[12]||0,
+        vca_no_boundary:r[13]||0,
+        vca_no_auto_bnd:r[14]||0,
+        vca_active_bnd: r[15]||0,
+      };
+    }
+  }
+
+  // Orgs sin sucursal asignada
+  const unassignedOrgs = [];
+  for(let i=2;i<rawDisp.length;i++){
+    const r=rawDisp[i];
+    if(!r[0]||r[0]==="TOTAL ISG") continue;
+    if(!r[2]||r[2]==="Sin asignar"||String(r[2]).trim()===""){
+      unassignedOrgs.push({id:String(r[0]||"").trim(), nombre:r[1]||"", ciudad:r[3]||""});
+    }
+  }
+
+  return {sucursales, config, dispPorSuc, orgsPorSuc, licPorSuc, cdeByOrg, unassignedOrgs, trim};
+}
+
+// ── SCORE ─────────────────────────────────────────────────────────────────────
+function score(suc){
+  const pairs = [
+    [suc.pct_conn,suc.obj_conn],[suc.pct_heh,suc.obj_heh],
+    [suc.pct_cosecha,suc.obj_cosecha],[suc.pct_spray,suc.obj_spray],
+    [suc.pct_sia,suc.obj_sia],[suc.pct_incpro,suc.obj_incpro],
+    [suc.pct_ea,suc.obj_ea],[suc.pct_sc,suc.obj_sc],[suc.pct_autotrac,suc.obj_autotrac]
+  ];
+  let t=0,c=0;
+  pairs.forEach(([v,o])=>{ if(v!==null&&v!==undefined&&o!==null&&o!==undefined){t+=Math.max(0,o-v);c++;} });
+  return c?t/c:0;
+}
+function urg(s){ return s>15?"red":s>5?"yellow":"green"; }
+
+// ── RENDER HOME ───────────────────────────────────────────────────────────────
+function renderHome(){
+  const {sucursales, config, dispPorSuc, trim} = DATA;
+  const sorted = [...sucursales].sort((a,b)=>score(b)-score(a));
+
+  // Totales globales
+  const totalOrgs = Object.values(dispPorSuc).reduce((s,d)=>s+d.orgs,0);
+  const totalDisp = Object.values(dispPorSuc).reduce((s,d)=>s+d.total,0);
+  const enObj = sucursales.filter(s=>score(s)<=5).length;
+
+  const html = `
+  <div class="home-header">
+    <div class="home-title">Dashboard<br><span>de Indicadores</span></div>
+    <div class="home-meta">
+      <span class="home-badge">FY26 · ${trim}</span>
+      <span class="home-week">${config.Semana_Actual||""} · Act: ${config.Fecha_Actualizacion||""}</span>
+    </div>
+  </div>
+
+  <div class="score-strip">
+    <div class="score-card">
+      <div class="score-card-val" style="color:var(--g);">${sucursales.length}</div>
+      <div class="score-card-lbl">Sucursales</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-val" style="color:var(--blue);">${totalOrgs.toLocaleString('es-AR')}</div>
+      <div class="score-card-lbl">Organizaciones</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-val" style="color:var(--g);">${enObj}</div>
+      <div class="score-card-lbl">En objetivo</div>
+    </div>
+  </div>
+
+  <div class="suc-grid-label">Seleccioná una sucursal</div>
+  <div class="suc-grid">
+    ${sorted.map(suc => {
+      const scoreVal = score(suc);
+      const u = urg(scoreVal);
+      const stConn = semaforo(suc.pct_conn, suc.obj_conn);
+      const stHeh  = semaforo(suc.pct_heh,  suc.obj_heh);
+      const orgs = DATA.dispPorSuc[suc.nombre]?.orgs || 0;
+      const pctConn = suc.pct_conn!==null ? suc.pct_conn.toFixed(1)+"%" : "—";
+      const pctHeh  = suc.pct_heh!==null  ? suc.pct_heh.toFixed(1)+"%"  : "—";
+      return `
+      <div class="suc-home-card urg-${u}" onclick="openSuc(${suc.id})">
+        <div class="shc-score" style="color:${sc(u)};">${scoreVal.toFixed(0)}</div>
+        <div class="shc-name">${suc.nombre}</div>
+        <div class="shc-kpis">
+          <div class="shc-kpi">
+            <div class="shc-kpi-val" style="color:${sc(stConn)};">${pctConn}</div>
+            <div class="shc-kpi-lbl">Ha Conn.</div>
+          </div>
+          <div class="shc-kpi">
+            <div class="shc-kpi-val" style="color:${sc(stHeh)};">${pctHeh}</div>
+            <div class="shc-kpi-lbl">Alt. Conn.</div>
+          </div>
+        </div>
+        <div class="shc-bar">
+          <div class="shc-bar-seg" style="background:${sc(stConn)};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(stHeh)};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_cosecha,suc.obj_cosecha))};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_spray,suc.obj_spray))};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_sia,suc.obj_sia))};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_sc,suc.obj_sc))};opacity:0.8;"></div>
+        </div>
+        <div class="shc-orgs">${orgs} organiz. · ${suc.ha_opp.toLocaleString('es-AR')} ha oport.</div>
+      </div>`;
+    }).join("")}
+  </div>
+  <div style="height:24px;"></div>`;
+
+  document.getElementById("screen-home").innerHTML = html;
+}
+
+// ── RENDER SUCURSAL ───────────────────────────────────────────────────────────
+function renderSuc(id){
+  const suc = DATA.sucursales.find(s=>s.id===id);
+  if(!suc) return;
+  currentSuc = id;
+  const scoreVal = score(suc); const u = urg(scoreVal);
+  const disp = DATA.dispPorSuc[suc.nombre]||{orgs:0,monitores:0,receptores:0,modems:0,modems_activos:0,total:0};
+
+  const html = `
+  <div class="suc-hero">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <div>
+        <div class="suc-hero-name">${suc.nombre}</div>
+        <div class="suc-hero-meta">
+          <span class="suc-hero-badge" style="background:${sb(u)};color:${sc(u)};border:1px solid ${sc(u)}33;">
+            ${u==="red"?"⚠ Requiere atención":u==="yellow"?"~ Cerca del objetivo":"✓ En objetivo"}
+          </span>
+          <span class="suc-hero-score">Score ${scoreVal.toFixed(1)} · ${DATA.trim}</span>
+        </div>
+      </div>
+      <button onclick="downloadSucursal(${suc.id})" style="background:#1A3A1A;border:1px solid #2D7A2D;color:#6EE26E;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+        ⬇ Excel
+      </button>
+    </div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="sum-card">
+      <div class="sum-val" style="color:var(--wm);">${suc.ha_opp.toLocaleString('es-AR')}</div>
+      <div class="sum-lbl">Ha Oportunidad</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-val" style="color:var(--blue);">${disp.orgs}</div>
+      <div class="sum-lbl">Organizaciones</div>
+      <div class="sum-sub">${disp.total} dispositivos</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-val" style="color:${sc(semaforo(suc.pct_conn,suc.obj_conn))};">${suc.pct_conn!==null?suc.pct_conn.toFixed(1)+"%":"—"}</div>
+      <div class="sum-lbl">Ha Conectadas</div>
+      <div class="sum-sub">obj ${suc.obj_conn||"—"}%</div>
+    </div>
+  </div>
+
+  <div class="tabs-wrap">
+    <button class="tab-btn ${currentTab==="indicadores"?"active":""}" onclick="switchTab('indicadores')">Indicadores</button>
+    <button class="tab-btn ${currentTab==="organizaciones"?"active":""}" onclick="switchTab('organizaciones')">Organizaciones</button>
+    <button class="tab-btn" onclick="goOrgs()" style="color:var(--ws);margin-left:auto;">Ver todas →</button>
+  </div>
+
+  <div class="tab-content ${currentTab==="indicadores"?"active":""}" id="tab-indicadores">${buildTabIndicadores(suc)}</div>
+  <div class="tab-content ${currentTab==="organizaciones"?"active":""}" id="tab-organizaciones">${buildTabOrganizaciones(suc)}</div>
+  <div style="height:24px;"></div>`;
+
+  document.getElementById("screen-suc").innerHTML = html;
+}
+
+function buildTabIndicadores(suc){
+  const kpisA = [
+    {lbl:"Ha Conectadas",val:suc.ha_conn,obj:null,unit:" ha"},
+    {lbl:"% Ha Conn.",val:suc.pct_conn,obj:suc.obj_conn},
+    {lbl:"Ha Alt. Conn.",val:suc.ha_heh,obj:null,unit:" ha"},
+    {lbl:"% Ha Alt.",val:suc.pct_heh,obj:suc.obj_heh},
+    {lbl:"Tec. Cosecha",val:suc.pct_cosecha,obj:suc.obj_cosecha},
+    {lbl:"Spray Tech",val:suc.pct_spray,obj:suc.obj_spray},
+  ];
+  const kpisU = [
+    {lbl:"SIA",val:suc.pct_sia,obj:suc.obj_sia},
+    {lbl:"INC PRO",val:suc.pct_incpro,obj:suc.obj_incpro},
+    {lbl:"EA",val:suc.pct_ea,obj:suc.obj_ea},
+    {lbl:"Section Ctrl.",val:suc.pct_sc,obj:suc.obj_sc},
+    {lbl:"AutoTrac",val:suc.pct_autotrac,obj:suc.obj_autotrac},
+  ];
+
+  const chipHtml = (k) => {
+    const unit = k.unit||"%";
+    const st = semaforo(k.val, k.obj);
+    const col = sc(st); const bg = sb(st);
+    const disp = k.val===null||k.val===undefined ? "—" : `${typeof k.val==="number"?k.val.toFixed(unit===" ha"?0:1):k.val}${unit}`;
+    const pct = k.obj&&k.val!==null ? Math.min(100,Math.round((k.val/k.obj)*100)) : 0;
+    return `<div class="ind-chip" style="background:${bg};border:1px solid ${col}22;">
+      <div class="ind-chip-lbl">${k.lbl}</div>
+      <div class="ind-chip-val" style="color:${col};">${disp}</div>
+      ${k.obj?`<div class="ind-chip-obj">obj ${k.obj}${unit}</div>
+      <div class="ind-chip-bar"><div class="ind-chip-bar-fill" style="width:${pct}%;background:${col};"></div></div>`:""}
+    </div>`;
+  };
+
+  // Gaps
+  const allK = [
+    {lbl:"Ha Conectadas %",v:suc.pct_conn,o:suc.obj_conn,g:"ADOPTION"},
+    {lbl:"Ha Alt. Conn. %",v:suc.pct_heh,o:suc.obj_heh,g:"ADOPTION"},
+    {lbl:"Tec. Cosecha",v:suc.pct_cosecha,o:suc.obj_cosecha,g:"ADOPTION"},
+    {lbl:"Spray Tech",v:suc.pct_spray,o:suc.obj_spray,g:"ADOPTION"},
+    {lbl:"SIA",v:suc.pct_sia,o:suc.obj_sia,g:"UTIL"},
+    {lbl:"INC PRO",v:suc.pct_incpro,o:suc.obj_incpro,g:"UTIL"},
+    {lbl:"EA",v:suc.pct_ea,o:suc.obj_ea,g:"UTIL"},
+    {lbl:"Section Control",v:suc.pct_sc,o:suc.obj_sc,g:"UTIL"},
+    {lbl:"AutoTrac",v:suc.pct_autotrac,o:suc.obj_autotrac,g:"UTIL"},
+  ];
+  const gaps = allK.filter(x=>x.o&&x.v!==null&&x.v!==undefined&&x.v<x.o).sort((a,b)=>(b.o-b.v)-(a.o-a.v));
+  const enObj = allK.filter(x=>x.o&&x.v!==null&&x.v!==undefined&&x.v>=x.o);
+
+  return `
+  <div class="ind-section">
+    <div class="ind-section-title">
+      <div class="ind-badge" style="background:var(--gdk);border:1px solid var(--gd);color:var(--g);">ADOPTION</div>
+      <div class="ind-line"></div>
+    </div>
+    <div class="ind-grid">${kpisA.map(chipHtml).join("")}</div>
+  </div>
+  <div class="ind-section">
+    <div class="ind-section-title">
+      <div class="ind-badge" style="background:var(--yd);border:1px solid #3A2D00;color:var(--y);">UTILIZATION</div>
+      <div class="ind-line"></div>
+    </div>
+    <div class="ind-grid">${kpisU.map(chipHtml).join("")}</div>
+  </div>
+  ${gaps.length>0?`
+  <div class="ind-section">
+    <div class="ind-section-title">
+      <div class="ind-badge" style="background:#1A0A0A;border:1px solid #3A1010;color:var(--r);">OPORTUNIDADES</div>
+      <div class="ind-line"></div>
+    </div>
+    <div class="opp-list">
+      ${gaps.map(x=>{
+        const gap=x.o-x.v; const pct=Math.round((x.v/x.o)*100);
+        const col=gap>15?"#E05252":"#F5C842";
+        const gbg=x.g==="ADOPTION"?"#0A1A0A":"#1A1500";
+        const gcol=x.g==="ADOPTION"?"#6EE26E":"#F5C842";
+        return `<div class="opp-item">
+          <span class="opp-tag" style="background:${gbg};color:${gcol};">${x.g}</span>
+          <span class="opp-name">${x.lbl}</span>
+          <div class="opp-right">
+            <div class="opp-track"><div class="opp-track-fill" style="width:${pct}%;background:${col};"></div></div>
+            <span class="opp-nums">${x.v.toFixed(1)}% / ${x.o}%</span>
+            <span class="opp-gap" style="color:${col};">−${gap.toFixed(1)}%</span>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+  </div>`:""}
+  ${enObj.length>0?`<div style="font-size:12px;color:var(--g);padding:8px 0;">✓ En objetivo: ${enObj.map(x=>x.lbl).join(", ")}</div>`:""}`;
+}
+
+function buildTabOrganizaciones(suc){
+  const orgs = DATA.orgsPorSuc[suc.nombre]||[];
+  if(orgs.length===0) return `<div class="empty"><div class="empty-icon">🏢</div>Sin organizaciones registradas</div>`;
+  const lics = DATA.licPorSuc[suc.nombre]||[];
+  const licByOrg = {};
+  lics.forEach(l=>{ if(!licByOrg[l.org_id]) licByOrg[l.org_id]=[]; licByOrg[l.org_id].push(l); });
+  const sorted = [...orgs].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  return `
+  <input class="org-search" type="text" placeholder="🔍 Buscar organización o ciudad..." oninput="filterOrgs(this.value)" id="org-search">
+  <div class="org-stats-row">
+    <span class="org-stat"><strong>${orgs.length}</strong> organizaciones</span>
+    <span class="org-stat"><strong>${orgs.reduce((s,o)=>s+o.total,0)}</strong> dispositivos</span>
+    <span class="org-stat"><strong>${lics.length}</strong> licencias</span>
+  </div>
+  <div class="org-list" id="org-list">
+    ${sorted.map((o,i) => buildOrgAccordion(o, licByOrg[o.id]||[], i)).join("")}
+  </div>`;
+}
+
+function buildOrgAccordion(org, lics, idx){
+  const estCol={"VENCIDA":"#E05252","CRÍTICA":"#E05252","PRÓXIMA":"#F5C842","ACTIVA":"#6EE26E","Sin fecha":"#888"};
+  const estBg={"VENCIDA":"#1A0A0A","CRÍTICA":"#1A0A0A","PRÓXIMA":"#1A1500","ACTIVA":"#0A1A0A","Sin fecha":"#111"};
+  const pctAct = org.modems>0 ? Math.round(org.modems_activos/org.modems*100) : 0;
+  const modColor = pctAct>=50?"#6EE26E":pctAct>=25?"#F5C842":"#E05252";
+  const licUrg = lics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA").length;
+
+  // CDE data
+  const cde = DATA.cdeByOrg ? DATA.cdeByOrg[String(org.id)] : null;
+
+  const ENG_STYLE = {
+    "Highly Engaged":         {bg:"#0A1A0A", col:"#6EE26E"},
+    "Highly Engaged Retained":{bg:"#1A1500", col:"#F5C842"},
+    "R12 Digitally Engaged":  {bg:"#0A101A", col:"#7DC6FF"},
+    "Land & Digital":         {bg:"#1A0A1A", col:"#D4A0FF"},
+  };
+
+  const chips = [
+    org.monitores>0   ? `<span class="org-chip has-data" title="Monitores">📺 ${org.monitores}</span>` : "",
+    org.receptores>0  ? `<span class="org-chip has-data" title="Receptores">📡 ${org.receptores}</span>` : "",
+    org.modems>0      ? `<span class="org-chip has-data" style="color:${modColor};border-color:${modColor}44;" title="${pctAct}% activos">📶 ${org.modems}</span>` : "",
+    lics.length>0     ? `<span class="org-chip has-data" style="color:${licUrg>0?"#E05252":"#6EE26E"};border-color:${licUrg>0?"#E05252":"#6EE26E"}44;" title="Licencias">📋 ${lics.length}</span>` : "",
+    cde ? `<span class="org-chip has-data" style="color:${(ENG_STYLE[cde.eng_level]||{col:"#888"}).col};border-color:${(ENG_STYLE[cde.eng_level]||{col:"#888"}).col}44;" title="${cde.eng_level}">⭐ ${cde.prom_r12} VCA</span>` : "",
+  ].filter(Boolean).join("");
+
+  // Panel dispositivos con modelos
+  const models = DATA.orgModels ? DATA.orgModels[String(org.id)] : null;
+
+  const buildModelTags = (modelDict) => {
+    if(!modelDict || Object.keys(modelDict).length===0) return "";
+    return Object.entries(modelDict).map(([modelo, cant]) =>
+      '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bb);border:1px solid var(--bd);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--wm);white-space:nowrap;">' +
+        '<span style="color:var(--blue);font-weight:600;">' + modelo + '</span>' +
+        '<span style="color:var(--ws);">×' + cant + '</span>' +
+      '</span>'
+    ).join("");
+  };
+
+  const monModels = models && Object.keys(models.monitores||{}).length>0
+    ? '<div style="margin-top:8px;"><div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Modelos de monitores</div><div style="display:flex;flex-wrap:wrap;gap:4px;">' + buildModelTags(models.monitores) + '</div></div>'
+    : "";
+  const recModels = models && Object.keys(models.receptores||{}).length>0
+    ? '<div style="margin-top:8px;"><div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Modelos de receptores</div><div style="display:flex;flex-wrap:wrap;gap:4px;">' + buildModelTags(models.receptores) + '</div></div>'
+    : "";
+  const modemsRow = org.modems>0
+    ? '<div class="org-modems-row"><div class="org-modems-pct" style="color:'+modColor+';">'+pctAct+'%</div><div class="org-modems-info">Modems activos<br><span style="font-size:10px;color:var(--wx);">'+org.modems_activos+' de '+org.modems+' activos</span></div></div>'
+    : "";
+
+  const dispPanel = `
+  <div class="org-detail-section">
+    <div class="org-detail-title">Dispositivos</div>
+    <div class="org-disp-grid">
+      <div class="org-disp-card"><div class="org-disp-val">${org.monitores}</div><div class="org-disp-lbl">Monitores</div></div>
+      <div class="org-disp-card"><div class="org-disp-val">${org.receptores}</div><div class="org-disp-lbl">Receptores</div></div>
+      <div class="org-disp-card"><div class="org-disp-val">${org.modems}</div><div class="org-disp-lbl">Modems MTG</div></div>
+    </div>
+    ${monModels}${recModels}${modemsRow}
+  </div>`;
+
+  // Panel CDE
+  const cdePanel = cde ? (() => {
+    const eng = ENG_STYLE[cde.eng_level] || {bg:"#111",col:"#888"};
+    const promCol = cde.prom_r12>=4 ? "#6EE26E" : "#E05252";
+    const vcasYN = [
+      {lbl:"Setup File",    val:cde.vca_setup},
+      {lbl:"Work Plan",     val:cde.vca_workplan},
+      {lbl:"Field/Bound.",  val:cde.vca_field},
+      {lbl:"Equip. Mon.",   val:cde.vca_equip},
+      {lbl:"Work Details",  val:cde.vca_work},
+      {lbl:"Reports",       val:cde.vca_reports},
+    ];
+    const vcasNum = [
+      {lbl:"WP Created R12",  val:cde.vca_wp_created},
+      {lbl:"WP Completed R12",val:cde.vca_wp_completed},
+      {lbl:"Files Uploaded",  val:cde.vca_files},
+      {lbl:"Campos s/Límite", val:cde.vca_no_boundary},
+      {lbl:"s/AutoLímite",    val:cde.vca_no_auto_bnd},
+      {lbl:"c/Límite Activo", val:cde.vca_active_bnd},
+    ];
+    return `
+    <div class="org-detail-section">
+      <div class="org-detail-title">Engagement & VCAs</div>
+
+      <!-- Resumen engagement -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+        <span class="eng-badge" style="background:${eng.bg};color:${eng.col};border:1px solid ${eng.col}44;">${cde.eng_level}</span>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--bb);border-radius:var(--r8);padding:6px 12px;border:1px solid var(--bd);">
+          <span class="prom-r12-big" style="color:${promCol};">${cde.prom_r12}</span>
+          <div>
+            <div style="font-size:11px;color:${promCol};font-weight:600;">VCA R12</div>
+            <div style="font-size:9px;color:var(--ws);">mín. 4 requeridas</div>
+          </div>
+        </div>
+        ${cde.risk_ha>0?`<div style="background:#1A0A0A;border:1px solid #E0525244;border-radius:var(--r8);padding:6px 12px;">
+          <div style="font-family:var(--font-mono);font-size:16px;font-weight:500;color:#E05252;">${cde.risk_ha.toFixed(1)} ha</div>
+          <div style="font-size:9px;color:#888;">Ha en riesgo</div>
+        </div>`:""}
+      </div>
+
+      <!-- VCAs Y/N -->
+      <div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Acciones completadas</div>
+      <div class="vca-grid" style="margin-bottom:12px;">
+        ${vcasYN.map(v=>{
+          const isY = v.val==="Y";
+          return `<div class="vca-chip" style="background:${isY?"#0A1A0A":"#1A0A0A"};border:1px solid ${isY?"#2D7A2D44":"#E0525244"};">
+            <div class="vca-chip-val" style="color:${isY?"#6EE26E":"#E05252"};">${isY?"✓":"✗"}</div>
+            <div class="vca-chip-lbl">${v.lbl}</div>
+          </div>`;
+        }).join("")}
+      </div>
+
+      <!-- VCAs numéricas -->
+      <div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Detalle de acciones (R12)</div>
+      <div class="vca-num-grid">
+        ${vcasNum.map(v=>{
+          const isZero = v.val===0||v.val===null;
+          return `<div class="vca-num-card" style="border-color:${isZero?"#E0525244":"var(--bd)"};">
+            <div class="vca-num-val" style="color:${isZero?"#E05252":"#CCCCCC"};">${v.val}</div>
+            <div class="vca-num-lbl">${v.lbl}</div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  })() : "";
+
+  // Panel licencias
+  const licPanel = lics.length>0 ? `
+  <div class="org-detail-section">
+    <div class="org-detail-title">Licencias (${lics.length})</div>
+    <div class="org-lic-list">
+      ${[...lics].sort((a,b)=>(a.dias||9999)-(b.dias||9999)).map(l=>{
+        const est=l.estado||"Sin fecha";
+        const col=estCol[est]||"#888";
+        const fv=l.fecha_venc?(l.fecha_venc instanceof Date?l.fecha_venc.toLocaleDateString("es-AR"):String(l.fecha_venc).slice(0,10)):"—";
+        const dias=l.dias!==null&&l.dias!==undefined?l.dias:"—";
+        return `<div class="org-lic-item" style="border-left-color:${col};">
+          <div class="org-lic-ns">${l.ns||"—"}</div>
+          <div class="org-lic-tipo">${(l.tipo||"").split(" - ")[0]}</div>
+          <div class="org-lic-footer">
+            <span class="org-lic-fecha">Vence: ${fv}</span>
+            <span class="org-lic-dias" style="color:${col};">${typeof dias==="number"?dias+" días":dias}</span>
+            <span class="org-lic-badge" style="background:${estBg[est]||"#111"};color:${col};">${est}</span>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+  </div>` : "";
+
+  return `
+  <div class="org-accordion" id="org-acc-${idx}" data-nombre="${org.nombre.toLowerCase()}" data-ciudad="${(org.ciudad||"").toLowerCase()}">
+    <div class="org-acc-header" onclick="toggleOrg(${idx})">
+      <div class="org-acc-left">
+        <div class="org-acc-name">${org.nombre}</div>
+        <div class="org-acc-city">${org.ciudad||"—"}</div>
+      </div>
+      <div class="org-acc-chips">${chips}</div>
+      <div class="org-acc-arrow">▼</div>
+    </div>
+    <div class="org-acc-body">
+      ${dispPanel}
+      ${cdePanel}
+      ${licPanel}
+    </div>
+  </div>`;
+}
+
+// ── SCREEN ORGANIZACIONES ─────────────────────────────────────────────────────
+// Estado de asignaciones pendientes (se guarda en memoria mientras dure la sesión)
+let pendingAssignments = {}; // { org_id: { nombre, ciudad, sucursal_asignada } }
+
+function renderOrgs(sucNombre){
+  const {sucursales, config} = DATA;
+  const activeSuc = sucNombre || sucursales[0]?.nombre;
+
+  const orgs = DATA.orgsPorSuc[activeSuc]||[];
+  const lics = DATA.licPorSuc[activeSuc]||[];
+  const licByOrg = {};
+  lics.forEach(l=>{ if(!licByOrg[l.org_id]) licByOrg[l.org_id]=[]; licByOrg[l.org_id].push(l); });
+  const sorted = [...orgs].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+  // Orgs sin sucursal asignada
+  const unassigned = DATA.unassignedOrgs || [];
+  const pendingCount = Object.keys(pendingAssignments).length;
+
+  const html = `
+  <div style="padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div class="orgs-title">Organizaciones</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${unassigned.length>0?`<button onclick="toggleUnassigned()" id="btn-unassigned"
+          style="background:#1A0A1A;border:1px solid #E0525244;color:#E05252;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">
+          ⚠ Sin sucursal (${unassigned.length})
+        </button>`:""}
+        ${pendingCount>0?`<button onclick="exportAssignments()"
+          style="background:#0A1A0A;border:1px solid #2D7A2D;color:#6EE26E;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">
+          ⬇ Exportar asignaciones (${pendingCount})
+        </button>`:""}
+      </div>
+    </div>
+
+    <!-- Panel orgs sin sucursal (colapsable) -->
+    <div id="panel-unassigned" style="display:none;margin-bottom:16px;">
+      <div style="background:#1A0A0A;border:1px solid #E0525244;border-radius:12px;overflow:hidden;">
+        <div style="padding:12px 14px;border-bottom:1px solid #3A1010;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;font-weight:700;color:#E05252;">Organizaciones sin sucursal asignada</span>
+          <span style="font-size:10px;color:#888;">${unassigned.length} orgs · asignales una sucursal y exportá</span>
+        </div>
+        <div style="max-height:400px;overflow-y:auto;">
+          ${unassigned.length===0
+            ? `<div style="padding:20px;text-align:center;color:#888;font-size:12px;">✓ Todas las organizaciones tienen sucursal asignada</div>`
+            : unassigned.map((org,i)=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2A1010;flex-wrap:wrap;" id="unasgn-${i}">
+              <div style="flex:1;min-width:120px;">
+                <div style="font-size:12px;font-weight:600;color:#fff;">${org.nombre}</div>
+                <div style="font-size:10px;color:#888;">${org.ciudad||"—"} · ID: ${org.id}</div>
+              </div>
+              <select onchange="assignOrg('${org.id}','${org.nombre.replace(/'/g,"\\'")}','${org.ciudad||""}',this.value,${i})"
+                style="background:#111;border:1px solid #333;color:#fff;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;min-width:140px;" id="sel-${i}">
+                <option value="">— Elegir sucursal —</option>
+                ${sucursales.map(s=>`<option value="${s.nombre}" ${pendingAssignments[org.id]?.sucursal===s.nombre?"selected":""}>${s.nombre}</option>`).join("")}
+              </select>
+              ${pendingAssignments[org.id]
+                ? `<span style="font-size:10px;color:#6EE26E;font-weight:600;">✓ ${pendingAssignments[org.id].sucursal}</span>`
+                : ""}
+            </div>`).join("")
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Selector de sucursal -->
+    <div class="suc-selector" id="suc-selector">
+      ${sucursales.map(s=>`
+      <button class="suc-sel-btn ${s.nombre===activeSuc?"active":""}" onclick="renderOrgs('${s.nombre}')">${s.nombre}</button>
+      `).join("")}
+    </div>
+
+    <!-- Búsqueda -->
+    <input class="org-search" type="text" placeholder="🔍 Buscar organización o ciudad..." oninput="filterOrgsGlobal(this.value)" id="org-search-global">
+
+    <!-- Stats -->
+    <div class="org-stats-row">
+      <span class="org-stat"><strong>${orgs.length}</strong> organizaciones</span>
+      <span class="org-stat"><strong>${orgs.reduce((s,o)=>s+o.total,0)}</strong> dispositivos</span>
+      <span class="org-stat"><strong>${lics.length}</strong> licencias</span>
+    </div>
+
+    <!-- Lista -->
+    <div class="org-list" id="org-list-global">
+      ${sorted.length===0
+        ? `<div class="empty"><div class="empty-icon">🏢</div>Sin organizaciones registradas</div>`
+        : sorted.map((o,i)=>buildOrgAccordion(o, licByOrg[o.id]||[], i)).join("")
+      }
+    </div>
+    <div style="height:24px;"></div>
+  </div>`;
+
+  document.getElementById("screen-orgs").innerHTML = html;
+}
+
+function toggleUnassigned(){
+  const panel = document.getElementById("panel-unassigned");
+  if(panel) panel.style.display = panel.style.display==="none" ? "block" : "none";
+}
+
+function assignOrg(orgId, nombre, ciudad, sucursal, idx){
+  if(!sucursal) { delete pendingAssignments[orgId]; }
+  else { pendingAssignments[orgId] = { id:orgId, nombre, ciudad, sucursal }; }
+  // Actualizar badge visualmente sin re-render completo
+  const row = document.getElementById("unasgn-"+idx);
+  if(row){
+    const badge = row.querySelector(".asgn-badge");
+    if(sucursal){
+      if(badge) badge.textContent="✓ "+sucursal;
+      else row.insertAdjacentHTML("beforeend",`<span class="asgn-badge" style="font-size:10px;color:#6EE26E;font-weight:600;">✓ ${sucursal}</span>`);
+    } else {
+      if(badge) badge.remove();
+    }
+  }
+  // Actualizar contador botón exportar
+  const count = Object.keys(pendingAssignments).length;
+  const btn = document.querySelector("[onclick='exportAssignments()']");
+  if(btn) btn.textContent = `⬇ Exportar asignaciones (${count})`;
+  else if(count>0){
+    const header = document.querySelector("#panel-unassigned").previousElementSibling;
+    if(header) header.insertAdjacentHTML("beforeend",`<button onclick="exportAssignments()"
+      style="background:#0A1A0A;border:1px solid #2D7A2D;color:#6EE26E;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">
+      ⬇ Exportar asignaciones (${count})</button>`);
+  }
+}
+
+function exportAssignments(){
+  const rows = [["ID Organización","Nombre Organización","Ciudad","Sucursal Asignada"]];
+  Object.values(pendingAssignments).forEach(a=>{
+    rows.push([a.id, a.nombre, a.ciudad||"", a.sucursal]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:16},{wch:35},{wch:20},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Asignaciones");
+  const fecha = new Date().toLocaleDateString("es-AR").replace(/\//g,"-");
+  XLSX.writeFile(wb, `ISG_Asignaciones_Sucursal_${fecha}.xlsx`);
+}
+
+function filterOrgsGlobal(q){
+  const items = document.querySelectorAll("#org-list-global .org-accordion");
+  let visible=0;
+  items.forEach(item=>{
+    const match = item.dataset.nombre.includes(q.toLowerCase()) || item.dataset.ciudad.includes(q.toLowerCase());
+    item.style.display = match?"":"none";
+    if(match) visible++;
+  });
+}
+
+function toggleOrg(idx){
+  const el = document.getElementById("org-acc-"+idx);
+  if(el) el.classList.toggle("open");
+}
+
+// ── DESCARGA EXCEL POR SUCURSAL ───────────────────────────────────────────────
+function downloadSucursal(id){
+  const suc = DATA.sucursales.find(s=>s.id===id);
+  if(!suc) return;
+
+  const trim = DATA.trim;
+  const orgs = DATA.orgsPorSuc[suc.nombre]||[];
+  const lics = DATA.licPorSuc[suc.nombre]||[];
+  const wb = XLSX.utils.book_new();
+
+  // ── HOJA 1: INDICADORES ──────────────────────────────────────────────────────
+  const kpis = [
+    ["KPI","Grupo","Valor","Objetivo "+trim,"Brecha","Estado"],
+    ["Ha Oportunidad","Adoption",suc.ha_opp,"—","—","—"],
+    ["Ha Conectadas (ha)","Adoption",suc.ha_conn,"—","—","—"],
+    ["% Ha Conectadas","Adoption",suc.pct_conn,suc.obj_conn,
+      suc.pct_conn!==null&&suc.obj_conn ? (suc.pct_conn-suc.obj_conn).toFixed(1) : "—",
+      suc.pct_conn!==null&&suc.obj_conn ? (suc.pct_conn>=suc.obj_conn?"✓ En objetivo":suc.pct_conn>=suc.obj_conn*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["Ha Alt. Conectadas (ha)","Adoption",suc.ha_heh,"—","—","—"],
+    ["% Ha Alt. Conectadas","Adoption",suc.pct_heh,suc.obj_heh,
+      suc.pct_heh!==null&&suc.obj_heh ? (suc.pct_heh-suc.obj_heh).toFixed(1) : "—",
+      suc.pct_heh!==null&&suc.obj_heh ? (suc.pct_heh>=suc.obj_heh?"✓ En objetivo":suc.pct_heh>=suc.obj_heh*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% Tec. Cosecha","Adoption",suc.pct_cosecha,suc.obj_cosecha,
+      suc.pct_cosecha!==null&&suc.obj_cosecha ? (suc.pct_cosecha-suc.obj_cosecha).toFixed(1) : "—",
+      suc.pct_cosecha!==null&&suc.obj_cosecha ? (suc.pct_cosecha>=suc.obj_cosecha?"✓ En objetivo":suc.pct_cosecha>=suc.obj_cosecha*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% Spray Tech","Adoption",suc.pct_spray,suc.obj_spray,
+      suc.pct_spray!==null&&suc.obj_spray ? (suc.pct_spray-suc.obj_spray).toFixed(1) : "—",
+      suc.pct_spray!==null&&suc.obj_spray ? (suc.pct_spray>=suc.obj_spray?"✓ En objetivo":suc.pct_spray>=suc.obj_spray*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% SIA","Utilization",suc.pct_sia,suc.obj_sia,
+      suc.pct_sia!==null&&suc.obj_sia ? (suc.pct_sia-suc.obj_sia).toFixed(1) : "—",
+      suc.pct_sia!==null&&suc.obj_sia ? (suc.pct_sia>=suc.obj_sia?"✓ En objetivo":suc.pct_sia>=suc.obj_sia*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% INC PRO","Utilization",suc.pct_incpro,suc.obj_incpro,
+      suc.pct_incpro!==null&&suc.obj_incpro ? (suc.pct_incpro-suc.obj_incpro).toFixed(1) : "—",
+      suc.pct_incpro!==null&&suc.obj_incpro ? (suc.pct_incpro>=suc.obj_incpro?"✓ En objetivo":suc.pct_incpro>=suc.obj_incpro*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% EA","Utilization",suc.pct_ea,suc.obj_ea,
+      suc.pct_ea!==null&&suc.obj_ea ? (suc.pct_ea-suc.obj_ea).toFixed(1) : "—",
+      suc.pct_ea!==null&&suc.obj_ea ? (suc.pct_ea>=suc.obj_ea?"✓ En objetivo":suc.pct_ea>=suc.obj_ea*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% Section Control","Utilization",suc.pct_sc,suc.obj_sc,
+      suc.pct_sc!==null&&suc.obj_sc ? (suc.pct_sc-suc.obj_sc).toFixed(1) : "—",
+      suc.pct_sc!==null&&suc.obj_sc ? (suc.pct_sc>=suc.obj_sc?"✓ En objetivo":suc.pct_sc>=suc.obj_sc*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% AutoTrac","Utilization",suc.pct_autotrac,suc.obj_autotrac,
+      suc.pct_autotrac!==null&&suc.obj_autotrac ? (suc.pct_autotrac-suc.obj_autotrac).toFixed(1) : "—",
+      suc.pct_autotrac!==null&&suc.obj_autotrac ? (suc.pct_autotrac>=suc.obj_autotrac?"✓ En objetivo":suc.pct_autotrac>=suc.obj_autotrac*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+  ];
+  const ws1 = XLSX.utils.aoa_to_sheet(kpis);
+  ws1['!cols'] = [{wch:28},{wch:12},{wch:14},{wch:14},{wch:10},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws1, "Indicadores");
+
+  // ── HOJA 2: ORGANIZACIONES ───────────────────────────────────────────────────
+  const orgHeaders = [
+    "ID Org","Nombre","Ciudad",
+    "Monitores","Receptores","Modems","Modems Activos","Total Disp.",
+    "Engagement Level","Prom R12 VCA","Ha en Riesgo",
+    "Setup File","Work Plan","Field/Bound.","Equip. Monitor.","Work Details","Reports",
+    "WP Created R12","WP Completed R12","Files Uploaded",
+    "Campos s/Límite","s/AutoLímite","c/Límite Activo"
+  ];
+  const orgRows = [orgHeaders];
+  orgs.forEach(org => {
+    const cde = DATA.cdeByOrg ? DATA.cdeByOrg[String(org.id)] : null;
+    orgRows.push([
+      org.id, org.nombre, org.ciudad||"",
+      org.monitores, org.receptores, org.modems, org.modems_activos||0, org.total,
+      cde ? cde.eng_level : "—",
+      cde ? cde.prom_r12 : "—",
+      cde ? cde.risk_ha : "—",
+      cde ? cde.vca_setup : "—",
+      cde ? cde.vca_workplan : "—",
+      cde ? cde.vca_field : "—",
+      cde ? cde.vca_equip : "—",
+      cde ? cde.vca_work : "—",
+      cde ? cde.vca_reports : "—",
+      cde ? cde.vca_wp_created : "—",
+      cde ? cde.vca_wp_completed : "—",
+      cde ? cde.vca_files : "—",
+      cde ? cde.vca_no_boundary : "—",
+      cde ? cde.vca_no_auto_bnd : "—",
+      cde ? cde.vca_active_bnd : "—",
+    ]);
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(orgRows);
+  ws2['!cols'] = [{wch:10},{wch:30},{wch:18},{wch:10},{wch:10},{wch:8},{wch:14},{wch:10},
+                  {wch:24},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12},{wch:14},{wch:13},{wch:10},
+                  {wch:14},{wch:16},{wch:14},{wch:14},{wch:13},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws2, "Organizaciones");
+
+  // ── HOJA 3: LICENCIAS ────────────────────────────────────────────────────────
+  const licHeaders = ["Nro. Serie","Organización","Tipo Licencia","Fecha Vencimiento","Días para Vencer","Estado","Acción"];
+  const licRows = [licHeaders];
+  [...lics].sort((a,b)=>(a.dias||9999)-(b.dias||9999)).forEach(l => {
+    const fv = l.fecha_venc ? (l.fecha_venc instanceof Date ? l.fecha_venc.toLocaleDateString("es-AR") : String(l.fecha_venc).slice(0,10)) : "—";
+    licRows.push([l.ns||"", l.org_nombre||"", (l.tipo||"").split(" - ")[0], fv, l.dias||"", l.estado||"", l.accion||""]);
+  });
+  const ws3 = XLSX.utils.aoa_to_sheet(licRows);
+  ws3['!cols'] = [{wch:18},{wch:30},{wch:20},{wch:16},{wch:16},{wch:12},{wch:22}];
+  XLSX.utils.book_append_sheet(wb, ws3, "Licencias");
+
+  // ── DESCARGAR ────────────────────────────────────────────────────────────────
+  const fecha = new Date().toLocaleDateString("es-AR").replace(/\//g,"-");
+  XLSX.writeFile(wb, `ISG_${suc.nombre.replace(/[\s.]/g,"_")}_${trim}_${fecha}.xlsx`);
+}
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
+function openSuc(id){
+  currentTab = "indicadores";
+  renderSuc(id);
+  document.getElementById("screen-home").classList.remove("active");
+  document.getElementById("screen-suc").classList.add("active");
+  document.getElementById("back-btn").classList.add("visible");
+  window.scrollTo(0,0);
+}
+
+function goHome(){
+  document.getElementById("screen-suc").classList.remove("active");
+  document.getElementById("screen-orgs").classList.remove("active");
+  document.getElementById("screen-home").classList.add("active");
+  document.getElementById("back-btn").classList.remove("visible");
+  window.scrollTo(0,0);
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+  event.target.classList.add("active");
+  document.getElementById("tab-"+tab).classList.add("active");
+}
+
+function goOrgs(){
+  renderOrgs(null);
+  document.getElementById("screen-home").classList.remove("active");
+  document.getElementById("screen-suc").classList.remove("active");
+  document.getElementById("screen-orgs").classList.add("active");
+  document.getElementById("back-btn").classList.add("visible");
+  window.scrollTo(0,0);
+}
+
+// ── CARGA ─────────────────────────────────────────────────────────────────────
+async function loadAndRender(){
+  try {
+    document.getElementById("load-sub").textContent = "Cargando datos...";
+    const resp = await fetch(JSON_URL+"?t="+Date.now());
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    document.getElementById("load-sub").textContent = "Procesando...";
+    DATA = await resp.json();
+    // Asegurar estado inicial correcto
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("screen-home").classList.add("active");
+    document.getElementById("screen-suc").classList.remove("active");
+    document.getElementById("screen-orgs").classList.remove("active");
+    document.getElementById("back-btn").classList.remove("visible");
+    renderHome();
+  } catch(err){
+    document.getElementById("loading").innerHTML = `
+      <div style="text-align:center;padding:32px 24px;">
+        <div style="color:#E05252;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px;">Sin conexión</div>
+        <div style="color:#888;font-size:12px;margin-bottom:24px;">${err.message}</div>
+        <button onclick="document.getElementById('fi').click()" style="background:#2D7A2D;border:none;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">📂 Cargar archivo (JSON o Excel)</button>
+        <input type="file" id="fi" accept=".xlsx" style="display:none;" onchange="loadLocal(event)">
+      </div>`;
+  }
+}
+
+function loadLocal(e){
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  if(file.name.endsWith('.json')){
+    r.onload=ev=>{ try{ DATA=JSON.parse(ev.target.result); showApp(); }catch(err){ alert("Error: "+err.message); } };
+    r.readAsText(file);
+  } else {
+    r.onload=ev=>{ try{ DATA=parseExcel(ev.target.result); showApp(); }catch(err){ alert("Error: "+err.message); } };
+    r.readAsArrayBuffer(file);
+  }
+}
+function showApp(){
+  document.getElementById("loading").style.display="none";
+  document.getElementById("app").style.display="block";
+  document.getElementById("screen-home").classList.add("active");
+  document.getElementById("screen-suc").classList.remove("active");
+  document.getElementById("screen-orgs").classList.remove("active");
+  document.getElementById("back-btn").classList.remove("visible");
+  renderHome();
+}
+
+async function refreshData(){
+  const btn = document.querySelector(".refresh-btn");
+  btn.textContent = "⟳"; btn.style.color = "var(--g)";
+  try {
+    const resp = await fetch(JSON_URL+"?t="+Date.now());
+    if(!resp.ok) throw new Error();
+    DATA = await resp.json();
+    renderHome();
+    if(currentSuc) renderSuc(currentSuc);
+  } catch(e){}
+  btn.textContent = "↻"; btn.style.color = "";
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+// Cargar SheetJS en background (solo para descarga de Excel)
+const xlsxScript=document.createElement("script");
+xlsxScript.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+document.head.appendChild(xlsxScript);
+// Arrancar carga de datos inmediatamente (JSON, no necesita XLSX)
+loadAndRender();
+</script>
+</body>
+</html>
