@@ -1,0 +1,2444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ISG · Agronorte</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* John Deere palette */
+  --g: #367C2B; --gd: #2D6B24; --gdk: #0D1F0B; --g-bright: #4CAF3F;
+  --y: #FFDE00; --yd: #1A1500; --y-dark: #B89F00;
+  --r: #D94040; --rd: #1A0A0A;
+  --b: #1A1A1A; --bb: #111111; --bs: #1E1E1E;
+  --bd: #2A2A2A; --bt: #333333;
+  --w: #FFFFFF; --wm: #DDDDDD; --ws: #888888; --wx: #555555;
+  --blue: #7DC6FF; --blued: #0A1A3A;
+  --font-title: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r8: 8px; --r12: 12px; --r16: 16px; --r20: 20px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; }
+body { background:var(--bb); color:var(--w); font-family:var(--font-body); overflow-x:hidden; }
+button { cursor:pointer; font-family:inherit; border:none; }
+a { color:inherit; text-decoration:none; }
+
+/* ── LOADING ── */
+#loading { position:fixed; inset:0; background:var(--bb); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; gap:20px; }
+.spin { width:36px; height:36px; border:2px solid var(--bd); border-top-color:var(--g); border-radius:50%; animation:spin 0.7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.load-title { font-family:var(--font-title); font-size:20px; color:var(--g); letter-spacing:-0.02em; }
+.load-sub { font-size:12px; color:var(--ws); }
+
+/* ── APP SHELL ── */
+#app { display:none; min-height:100vh; }
+
+/* ── TOP BAR ── */
+.topbar { position:sticky; top:0; z-index:200; background:#1A1A1A; border-bottom:3px solid var(--y); }
+.topbar-inner { display:flex; align-items:center; gap:12px; padding:0 16px; height:56px; }
+.topbar-logo { width:5px; height:26px; background:var(--y); border-radius:2px; flex-shrink:0; }
+.topbar-title { font-family:var(--font-title); font-size:16px; font-weight:800; letter-spacing:-0.01em; flex:1; color:var(--w); }
+.topbar-sub { font-size:10px; color:var(--ws); }
+.back-btn { display:none; align-items:center; gap:6px; background:var(--g); border:none; color:var(--w); border-radius:var(--r8); padding:8px 16px; font-size:13px; font-weight:700; }
+.back-btn.visible { display:flex; }
+.refresh-btn { background:none; border:1px solid var(--bd); color:var(--ws); border-radius:var(--r8); padding:6px 10px; font-size:18px; line-height:1; transition:all 0.2s; }
+.refresh-btn:hover { border-color:var(--y); color:var(--y); }
+
+/* ── SCREEN SYSTEM ── */
+.screen { display:none; }
+.screen.active { display:block; animation:fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ══════════════════════════════════════════════
+   SCREEN: HOME
+══════════════════════════════════════════════ */
+#screen-home { padding:16px; }
+
+.home-header { margin-bottom:20px; }
+.home-title { font-family:var(--font-title); font-size:26px; font-weight:800; letter-spacing:-0.03em; line-height:1.1; }
+.home-title span { color:var(--g); }
+.home-meta { display:flex; gap:12px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+.home-badge { font-size:11px; background:var(--g); color:var(--y); border-radius:20px; padding:4px 12px; font-weight:700; }
+.home-week { font-size:11px; color:var(--ws); }
+
+/* Score resumen */
+.score-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+.score-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:16px; text-align:center; border-top:3px solid var(--y); }
+.score-card-val { font-family:var(--font-mono); font-size:28px; font-weight:700; color:var(--y); }
+.score-card-lbl { font-size:10px; color:var(--ws); text-transform:uppercase; letter-spacing:0.08em; margin-top:4px; }
+
+/* Sucursal grid */
+.suc-grid-label { font-size:10px; color:var(--ws); text-transform:uppercase; letter-spacing:0.08em; font-weight:600; margin-bottom:10px; }
+.suc-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+@media(min-width:600px){ .suc-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .suc-grid { grid-template-columns:repeat(4,1fr); } }
+
+.suc-home-card { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); padding:16px; cursor:pointer; transition:all 0.18s; position:relative; overflow:hidden; }
+.suc-home-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; border-radius:var(--r12) var(--r12) 0 0; }
+.suc-home-card:active { transform:scale(0.97); }
+.suc-home-card:hover { border-color:var(--y); transform:translateY(-2px); box-shadow:0 4px 20px rgba(255,222,0,0.1); }
+.suc-home-card.urg-red::before { background:var(--r); }
+.suc-home-card.urg-yellow::before { background:var(--y); }
+.suc-home-card.urg-green::before { background:var(--g); }
+
+.shc-name { font-family:var(--font-title); font-size:15px; font-weight:800; margin-bottom:12px; line-height:1.2; letter-spacing:-0.01em; }
+.shc-kpis { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.shc-kpi { background:var(--bb); border-radius:6px; padding:8px 10px; }
+.shc-kpi-val { font-family:var(--font-mono); font-size:22px; font-weight:700; line-height:1; }
+.shc-kpi-obj { font-size:10px; color:var(--ws); margin-top:2px; }
+.shc-kpi-lbl { font-size:8px; color:var(--ws); text-transform:uppercase; letter-spacing:0.05em; margin-top:4px; }
+.shc-kpi-bar { height:3px; background:var(--bt); border-radius:2px; margin-top:5px; }
+.shc-kpi-bar-fill { height:3px; border-radius:2px; }
+.shc-bar { display:flex; gap:2px; margin-top:4px; }
+.shc-bar-seg { flex:1; height:4px; border-radius:2px; }
+.shc-score { position:absolute; top:12px; right:12px; font-family:var(--font-mono); font-size:11px; font-weight:700; background:var(--bb); border-radius:20px; padding:2px 8px; }
+.shc-orgs { font-size:10px; color:var(--wx); margin-top:6px; }
+
+/* ══════════════════════════════════════════════
+   SCREEN: SUCURSAL
+══════════════════════════════════════════════ */
+#screen-suc { padding:0; }
+
+/* Hero */
+.suc-hero { padding:20px 16px 0; position:relative; }
+.suc-hero-name { font-family:var(--font-title); font-size:28px; font-weight:800; letter-spacing:-0.03em; line-height:1.1; }
+.suc-hero-name span { color:var(--g); }
+.suc-hero-meta { display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; align-items:center; }
+.suc-hero-badge { font-size:10px; border-radius:20px; padding:3px 10px; font-weight:700; }
+.suc-hero-score { font-family:var(--font-mono); font-size:11px; color:var(--ws); }
+
+/* Summary strip */
+.summary-strip { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:14px 16px; }
+@media(min-width:500px){ .summary-strip { grid-template-columns:repeat(4,1fr); } }
+.sum-card { background:var(--bs); border-radius:var(--r12); padding:14px 16px; border:1px solid var(--bd); border-top:2px solid var(--bd); }
+.sum-val { font-family:var(--font-mono); font-size:28px; font-weight:700; line-height:1; }
+.sum-lbl { font-size:9px; color:var(--ws); text-transform:uppercase; letter-spacing:0.07em; margin-top:6px; }
+.sum-sub { font-size:10px; color:var(--wx); margin-top:3px; }
+
+/* Tabs */
+.tabs-wrap { border-bottom:2px solid var(--bd); padding:0 16px; display:flex; gap:0; overflow-x:auto; -webkit-overflow-scrolling:touch; position:sticky; top:56px; background:var(--bb); z-index:100; }
+.tabs-wrap::-webkit-scrollbar { display:none; }
+.tab-btn { padding:14px 20px; font-size:13px; font-weight:700; color:var(--ws); border-bottom:3px solid transparent; white-space:nowrap; background:none; transition:all 0.15s; letter-spacing:0.01em; }
+.tab-btn.active { color:var(--y); border-bottom-color:var(--y); }
+
+.tab-content { display:none; padding:16px; }
+.tab-content.active { display:block; animation:fadeIn 0.2s ease; }
+
+/* ── TAB: INDICADORES ── */
+.ind-section { margin-bottom:24px; }
+.ind-section-title { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.ind-badge { padding:5px 14px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.04em; }
+.ind-line { flex:1; height:1px; background:var(--bd); }
+.ind-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+@media(min-width:500px){ .ind-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px){ .ind-grid { grid-template-columns:repeat(4,1fr); } }
+
+.ind-chip { border-radius:var(--r12); padding:14px; position:relative; overflow:hidden; }
+.ind-chip-lbl { font-size:9px; color:var(--ws); text-transform:uppercase; letter-spacing:0.07em; font-family:var(--font-mono); margin-bottom:8px; }
+.ind-chip-val { font-family:var(--font-mono); font-size:32px; font-weight:700; line-height:1; }
+.ind-chip-val-ha { font-family:var(--font-mono); font-size:20px; font-weight:500; line-height:1; color:var(--wm); }
+.ind-chip-obj { font-size:11px; color:var(--ws); margin-top:5px; }
+.ind-chip-obj strong { font-size:13px; }
+.ind-chip-bar { height:5px; background:var(--bt); border-radius:3px; margin-top:8px; }
+.ind-chip-bar-fill { height:5px; border-radius:3px; transition:width 0.5s; }
+.ind-chip-pct { font-size:9px; margin-top:4px; font-family:var(--font-mono); }
+.ind-chip-empty { border-radius:var(--r12); padding:14px; background:var(--bs); border:1px dashed var(--bt); opacity:0.5; }
+.ind-chip-empty .ind-chip-lbl { margin-bottom:8px; }
+.ind-chip-empty-val { font-size:22px; color:var(--bt); font-family:var(--font-mono); }
+
+/* Opp list */
+.opp-list { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+.opp-item { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r8); padding:10px 12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.opp-tag { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+.opp-name { font-size:12px; color:var(--w); flex:1; min-width:80px; }
+.opp-right { display:flex; align-items:center; gap:8px; }
+.opp-track { width:50px; height:5px; background:var(--bt); border-radius:3px; }
+.opp-track-fill { height:5px; border-radius:3px; }
+.opp-nums { font-family:var(--font-mono); font-size:11px; color:var(--w); font-weight:500; white-space:nowrap; }
+.opp-gap { font-size:11px; font-weight:700; white-space:nowrap; }
+
+/* ══════════════════════════════════════════════
+   SCREEN: ORGANIZACIONES
+══════════════════════════════════════════════ */
+#screen-orgs { padding:16px; }
+.orgs-header { margin-bottom:16px; }
+.orgs-title { font-family:var(--font-title); font-size:22px; font-weight:800; letter-spacing:-0.02em; }
+.orgs-title span { color:var(--g); }
+
+/* Selector sucursal */
+.suc-selector { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; margin-bottom:14px; }
+.suc-selector::-webkit-scrollbar { display:none; }
+.suc-sel-btn { padding:6px 14px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; border:1px solid var(--bd); background:var(--bs); color:var(--ws); transition:all 0.15s; flex-shrink:0; }
+.suc-sel-btn.active { background:var(--gdk); border-color:var(--gd); color:var(--g); }
+
+/* Búsqueda y stats */
+.org-search { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r8); padding:9px 14px; width:100%; color:var(--w); font-size:13px; outline:none; font-family:var(--font-body); }
+.org-search:focus { border-color:var(--gd); }
+.org-search::placeholder { color:var(--wx); }
+.org-stats-row { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+.org-stat { font-size:11px; color:var(--ws); }
+.org-stat strong { color:var(--wm); }
+
+/* Acordeón de organizaciones */
+.org-list { display:flex; flex-direction:column; gap:6px; }
+
+.org-accordion { background:var(--bs); border:1px solid var(--bd); border-radius:var(--r12); overflow:hidden; transition:border-color 0.2s; }
+.org-accordion.open { border-color:var(--gd); }
+
+.org-acc-header { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; }
+.org-acc-header:active { opacity:0.8; }
+.org-acc-left { flex:1; min-width:0; }
+.org-acc-name { font-size:13px; font-weight:600; color:var(--w); }
+.org-acc-city { font-size:10px; color:var(--ws); margin-top:1px; }
+.org-acc-chips { display:flex; gap:5px; flex-shrink:0; }
+.org-chip { font-size:10px; font-family:var(--font-mono); background:var(--bb); border:1px solid var(--bd); border-radius:6px; padding:3px 8px; color:var(--wm); cursor:pointer; transition:all 0.15s; }
+.org-chip:hover { border-color:var(--blue); color:var(--blue); }
+.org-chip.has-data { border-color:var(--bt); }
+.org-acc-arrow { font-size:12px; color:var(--ws); transition:transform 0.2s; flex-shrink:0; }
+.org-accordion.open .org-acc-arrow { transform:rotate(180deg); }
+
+/* Panel expandido */
+.org-acc-body { display:none; border-top:1px solid var(--bd); }
+.org-accordion.open .org-acc-body { display:block; animation:fadeIn 0.2s ease; }
+
+.org-detail-section { padding:12px 14px; border-bottom:1px solid var(--bd); }
+.org-detail-section:last-child { border-bottom:none; }
+.org-detail-title { font-size:10px; color:var(--ws); text-transform:uppercase; letter-spacing:0.07em; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.org-detail-title::after { content:''; flex:1; height:1px; background:var(--bd); }
+
+/* Dispositivos en acordeón */
+.org-disp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.org-disp-card { background:var(--bb); border:1px solid var(--bd); border-radius:var(--r8); padding:8px 10px; text-align:center; }
+.org-disp-val { font-family:var(--font-mono); font-size:18px; font-weight:500; color:var(--blue); }
+.org-disp-lbl { font-size:8px; color:var(--ws); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
+
+/* Modems activos badge */
+.org-modems-row { display:flex; align-items:center; gap:10px; background:var(--bb); border-radius:var(--r8); padding:8px 12px; margin-top:8px; border:1px solid var(--bd); }
+.org-modems-pct { font-family:var(--font-mono); font-size:20px; font-weight:500; }
+.org-modems-info { font-size:11px; color:var(--ws); }
+
+/* Licencias en acordeón */
+.org-lic-list { display:flex; flex-direction:column; gap:5px; }
+.org-lic-item { background:var(--bb); border-radius:var(--r8); padding:8px 10px; border-left:2px solid transparent; }
+.org-lic-ns { font-family:var(--font-mono); font-size:9px; color:var(--wx); }
+.org-lic-tipo { font-size:11px; color:var(--wm); margin:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.org-lic-footer { display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
+.org-lic-fecha { font-size:10px; color:var(--ws); }
+.org-lic-dias { font-family:var(--font-mono); font-size:11px; font-weight:700; }
+.org-lic-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; margin-left:auto; }
+
+/* ── CDE ENGAGEMENT ── */
+.eng-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; }
+.vca-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:8px; }
+@media(min-width:500px){ .vca-grid { grid-template-columns:repeat(6,1fr); } }
+.vca-chip { border-radius:6px; padding:6px 4px; text-align:center; }
+.vca-chip-val { font-size:14px; font-weight:700; }
+.vca-chip-lbl { font-size:8px; color:var(--ws); margin-top:2px; line-height:1.2; }
+.vca-num-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+@media(min-width:500px){ .vca-num-grid { grid-template-columns:repeat(3,1fr); } }
+.vca-num-card { background:var(--bb); border-radius:6px; padding:7px 8px; border:1px solid var(--bd); }
+.vca-num-val { font-family:var(--font-mono); font-size:16px; font-weight:500; }
+.vca-num-lbl { font-size:8px; color:var(--ws); margin-top:1px; line-height:1.2; }
+.risk-row { display:flex; align-items:center; gap:10px; background:var(--bb); border-radius:var(--r8); padding:8px 12px; margin-top:8px; border:1px solid var(--bd); }
+.prom-r12-big { font-family:var(--font-mono); font-size:28px; font-weight:500; }
+.empty { text-align:center; padding:40px 20px; color:var(--wx); font-size:13px; }
+.empty-icon { font-size:32px; margin-bottom:8px; }
+
+/* ── ERROR ── */
+.err-box { background:var(--rd); border:1px solid var(--r); border-radius:var(--r12); padding:20px; text-align:center; margin:16px; }
+
+/* ── ASISTENTE FLOTANTE ── */
+#asistente-fab { position:fixed; bottom:24px; right:24px; z-index:500; width:52px; height:52px; background:var(--y); border-radius:50%; border:none; font-size:22px; cursor:pointer; box-shadow:0 4px 16px rgba(255,222,0,0.4); display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+#asistente-fab:hover { transform:scale(1.1); box-shadow:0 6px 24px rgba(255,222,0,0.6); }
+#asistente-panel { position:fixed; bottom:88px; right:24px; z-index:500; width:380px; max-width:calc(100vw - 32px); max-height:calc(100vh - 120px); background:#1A1A1A; border:1px solid var(--y)44; border-radius:var(--r16); box-shadow:0 8px 32px rgba(0,0,0,0.6); display:none; flex-direction:column; overflow:hidden; }
+@media(max-width:500px){ #asistente-panel { bottom:0; right:0; left:0; width:100%; max-width:100%; border-radius:var(--r16) var(--r16) 0 0; max-height:80vh; } #asistente-fab { bottom:16px; right:16px; } }
+#asistente-header { background:var(--y); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+#asistente-close { background:none; border:none; color:#111; font-size:18px; cursor:pointer; padding:0; line-height:1; }
+#asistente-content { padding:16px; overflow-y:auto; flex:1; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spin"></div>
+  <div class="load-title">ISG · Agronorte</div>
+  <div class="load-sub" id="load-sub">Cargando datos...</div>
+</div>
+
+<div id="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-logo"></div>
+      <div style="flex:1;">
+        <div class="topbar-title">ISG · Agronorte</div>
+      </div>
+      <button class="back-btn" id="back-btn" onclick="goHome()">← Sucursales</button>
+      <div style="display:flex;gap:6px;">
+        <button onclick="event.stopPropagation();window.open('https://aleregalini7488.github.io/','_blank')" style="background:var(--g);border:none;color:#fff;border-radius:var(--r8);padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;">🏠 Inicio</button>
+        <button class="refresh-btn" onclick="goOportunidades()" title="Oportunidades" style="font-size:12px;padding:6px 10px;font-weight:600;color:var(--y);border-color:var(--y)44;">🎯</button>
+        <button class="refresh-btn" onclick="refreshData()" title="Actualizar">↻</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN HOME -->
+  <div class="screen active" id="screen-home"></div>
+
+  <!-- SCREEN SUCURSAL -->
+  <div class="screen" id="screen-suc"></div>
+
+  <!-- SCREEN ORGANIZACIONES -->
+  <div class="screen" id="screen-orgs"></div>
+
+  <!-- SCREEN LICENCIAS -->
+  <div class="screen" id="screen-lic"></div>
+
+  <!-- SCREEN OPORTUNIDADES -->
+  <div class="screen" id="screen-opp"></div>
+</div>
+
+<!-- ASISTENTE FLOTANTE -->
+<button id="asistente-fab" onclick="toggleAsistente()" title="Asistente ISG">🎯</button>
+<div id="asistente-panel">
+  <div id="asistente-header">
+    <span>🎯 Asistente ISG</span>
+    <button id="asistente-close" onclick="toggleAsistente()">✕</button>
+  </div>
+  <div id="asistente-content"></div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const JSON_URL = "https://raw.githubusercontent.com/aleregalini7488/isg-dashboard/main/isg_data.json";
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let DATA = null;
+let currentSuc = null;
+let currentTab = "indicadores";
+
+// ── COLORES ───────────────────────────────────────────────────────────────────
+function semaforo(v, o) {
+  if (v===null||v===undefined||o===null||o===undefined) return "neutral";
+  return v>=o ? "green" : v>=o*0.85 ? "yellow" : "red";
+}
+const COL  = {green:"#6EE26E", yellow:"#F5C842", red:"#E05252", neutral:"#444", blue:"#7DC6FF"};
+const BG   = {green:"#0A1A0A", yellow:"#1A1500", red:"#1A0A0A", neutral:"#111", blue:"#0A1A3A"};
+const BORD = {green:"#2D7A2D", yellow:"#3A2D00", red:"#3A1010", neutral:"#222", blue:"#1A3A6A"};
+function sc(st){ return COL[st]||COL.neutral; }
+function sb(st){ return BG[st]||BG.neutral; }
+
+// ── PARSE EXCEL ───────────────────────────────────────────────────────────────
+function parseExcel(buffer) {
+  const wb = XLSX.read(buffer, {type:"array", cellDates:true});
+
+  // CONFIG
+  const rawCfg = XLSX.utils.sheet_to_json(wb.Sheets["CONFIG"], {header:1, defval:null});
+  const config = {};
+  for(let i=2;i<rawCfg.length;i++) if(rawCfg[i][0]) config[rawCfg[i][0]]=rawCfg[i][1];
+
+  // SUCURSALES
+  const rawSuc = XLSX.utils.sheet_to_json(wb.Sheets["SUCURSALES"], {header:1, defval:null});
+  const trim = config.Trimestre_Activo || "Q3";
+  const trimIdx = {Q1:0,Q2:1,Q3:2,Q4:3}[trim]||2;
+
+  const sucursales = [];
+  for(let i=3;i<rawSuc.length;i++){
+    const r=rawSuc[i];
+    if(!r[0]||typeof r[0]!=="string") continue;
+    const getObj = (base) => r[base+trimIdx]||null;
+    sucursales.push({
+      id:i-2, nombre:r[0],
+      ha_opp:r[1]||0, ha_conn:r[2]||0,
+      pct_conn: typeof r[3]==="number"?r[3]:null,
+      obj_conn: getObj(4),
+      ha_heh:r[8]||0,
+      pct_heh: typeof r[9]==="number"?r[9]:null,
+      obj_heh: getObj(10),
+      pct_cosecha:r[14]||null, obj_cosecha:getObj(15),
+      pct_spray:r[19]||null,   obj_spray:getObj(20),
+      pct_sia:r[24]||null,     obj_sia:getObj(25),
+      pct_incpro:r[29]||null,  obj_incpro:getObj(30),
+      pct_ea:r[34]||null,      obj_ea:getObj(35),
+      pct_sc:r[39]||null,      obj_sc:getObj(40),
+      pct_autotrac:r[44]||null,obj_autotrac:getObj(45),
+      semana:r[49]||"",
+    });
+  }
+
+  // DISPOSITIVOS por sucursal
+  const rawDisp = XLSX.utils.sheet_to_json(wb.Sheets["DISPOSITIVOS"], {header:1, defval:null});
+  const dispPorSuc = {};
+  const orgsPorSuc = {}; // lista de orgs por sucursal
+  for(let i=2;i<rawDisp.length;i++){
+    const r=rawDisp[i];
+    if(!r[2]||r[0]==="TOTAL ISG") continue;
+    const suc=r[2];
+    if(!dispPorSuc[suc]) { dispPorSuc[suc]={orgs:0,monitores:0,receptores:0,modems:0,modems_activos:0,total:0}; orgsPorSuc[suc]=[]; }
+    dispPorSuc[suc].orgs++;
+    dispPorSuc[suc].monitores += r[5]||0;
+    dispPorSuc[suc].receptores+= r[6]||0;
+    dispPorSuc[suc].modems    += r[7]||0;
+    dispPorSuc[suc].modems_activos += r[8]||0;
+    dispPorSuc[suc].total     += r[9]||0;
+    orgsPorSuc[suc].push({
+      id:r[0], nombre:r[1], ciudad:r[3],
+      monitores:r[5]||0, receptores:r[6]||0, modems:r[7]||0, modems_activos:r[8]||0, total:r[9]||0
+    });
+  }
+
+  // LICENCIAS por sucursal
+  const rawLic = XLSX.utils.sheet_to_json(wb.Sheets["LICENCIAS"], {header:1, defval:null});
+  const licPorSuc = {};
+  for(let i=2;i<rawLic.length;i++){
+    const r=rawLic[i];
+    if(!r[0]) continue;
+    const suc=r[4];
+    if(!licPorSuc[suc]) licPorSuc[suc]=[];
+    licPorSuc[suc].push({ns:r[0],modelo:r[1],org_id:r[2],org_nombre:r[3],sucursal:r[4],tipo:r[5],fecha_venc:r[6],dias:r[7],estado:r[8],accion:r[9]});
+  }
+
+  // CDE — Engagement y VCAs por org
+  const wsCDE = wb.Sheets["CDE"];
+  const cdeByOrg = {};
+  if(wsCDE){
+    const rawCDE = XLSX.utils.sheet_to_json(wsCDE, {header:1, defval:null});
+    for(let i=2;i<rawCDE.length;i++){
+      const r=rawCDE[i];
+      if(!r[0]) continue;
+      const orgId = String(r[0]).trim();
+      cdeByOrg[orgId] = {
+        eng_level:      r[1]||"",
+        prom_r12:       r[2]||0,
+        risk_ha:        r[3]||0,
+        vca_setup:      r[4]||"N",
+        vca_workplan:   r[5]||"N",
+        vca_field:      r[6]||"N",
+        vca_equip:      r[7]||"N",
+        vca_work:       r[8]||"N",
+        vca_reports:    r[9]||"N",
+        vca_wp_created: r[10]||0,
+        vca_wp_completed:r[11]||0,
+        vca_files:      r[12]||0,
+        vca_no_boundary:r[13]||0,
+        vca_no_auto_bnd:r[14]||0,
+        vca_active_bnd: r[15]||0,
+      };
+    }
+  }
+
+  // Orgs sin sucursal asignada
+  const unassignedOrgs = [];
+  for(let i=2;i<rawDisp.length;i++){
+    const r=rawDisp[i];
+    if(!r[0]||r[0]==="TOTAL ISG") continue;
+    if(!r[2]||r[2]==="Sin asignar"||String(r[2]).trim()===""){
+      unassignedOrgs.push({id:String(r[0]||"").trim(), nombre:r[1]||"", ciudad:r[3]||""});
+    }
+  }
+
+  return {sucursales, config, dispPorSuc, orgsPorSuc, licPorSuc, cdeByOrg, unassignedOrgs, trim};
+}
+
+// ── SCORE ─────────────────────────────────────────────────────────────────────
+function score(suc){
+  const pairs = [
+    [suc.pct_conn,suc.obj_conn],[suc.pct_heh,suc.obj_heh],
+    [suc.pct_cosecha,suc.obj_cosecha],[suc.pct_spray,suc.obj_spray],
+    [suc.pct_sia,suc.obj_sia],[suc.pct_incpro,suc.obj_incpro],
+    [suc.pct_ea,suc.obj_ea],[suc.pct_sc,suc.obj_sc],[suc.pct_autotrac,suc.obj_autotrac]
+  ];
+  let t=0,c=0;
+  pairs.forEach(([v,o])=>{ if(v!==null&&v!==undefined&&o!==null&&o!==undefined){t+=Math.max(0,o-v);c++;} });
+  return c?t/c:0;
+}
+function urg(s){ return s>15?"red":s>5?"yellow":"green"; }
+
+// ── RENDER HOME ───────────────────────────────────────────────────────────────
+function renderHome(){
+  const {sucursales, config, dispPorSuc, trim} = DATA;
+  const sorted = [...sucursales].sort((a,b)=>score(b)-score(a));
+  const totalOrgs = Object.values(dispPorSuc).reduce((s,d)=>s+d.orgs,0);
+  const enObj = sucursales.filter(s=>score(s)<=5).length;
+  const gl = DATA.global || {};
+  const glConnSt = gl.pct_conn >= gl.obj_conn ? 'var(--g)' : gl.pct_conn >= gl.obj_conn*0.85 ? 'var(--y)' : 'var(--r)';
+  const glHehSt  = gl.pct_heh  >= gl.obj_heh  ? 'var(--g)' : gl.pct_heh  >= gl.obj_heh*0.85  ? 'var(--y)' : 'var(--r)';
+
+  const html = `
+  <div class="home-header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div>
+        <div class="home-title">Dashboard<br><span>de Indicadores</span></div>
+        <div class="home-meta">
+          <span class="home-badge">FY26 · ${trim}</span>
+          <span class="home-week">${config.Semana_Actual||""} · Act: ${config.Fecha_Actualizacion||""}</span>
+        </div>
+      </div>
+      <button onclick="goOrgs()" style="background:var(--g);border:none;color:#fff;border-radius:var(--r8);padding:12px 20px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:8px;white-space:nowrap;">
+        🏢 Organizaciones
+      </button>
+    </div>
+  </div>
+
+  <div class="score-strip">
+    <div class="score-card">
+      <div class="score-card-val" style="color:var(--y);">${sucursales.length}</div>
+      <div class="score-card-lbl">Sucursales</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-val" style="color:var(--blue);">${totalOrgs.toLocaleString('es-AR')}</div>
+      <div class="score-card-lbl">Organizaciones</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-val" style="color:var(--y);">${enObj}</div>
+      <div class="score-card-lbl">En objetivo</div>
+    </div>
+  </div>
+
+  <!-- Indicadores globales Agronorte -->
+  <div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);padding:20px;margin-bottom:20px;border-top:3px solid var(--y);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <span style="font-family:var(--font-title);font-size:15px;font-weight:800;">Agronorte · Indicadores Globales</span>
+      <span style="font-size:10px;color:var(--ws);">${gl.fecha||""} · ${gl.ha_opp ? gl.ha_opp.toLocaleString('es-AR') + ' ha oportunidad' : ''}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+      <!-- Ha Conectadas -->
+      <div style="background:var(--bb);border-radius:var(--r12);padding:16px;border-left:4px solid ${glConnSt};">
+        <div style="font-size:10px;color:var(--ws);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">Ha Conectadas</div>
+        <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+          <span style="font-family:var(--font-mono);font-size:44px;font-weight:700;color:${glConnSt};line-height:1;">${gl.pct_conn||0}%</span>
+          <div style="padding-bottom:6px;">
+            <div style="font-size:13px;color:var(--ws);">de <strong style="color:var(--wm);font-size:16px;">${gl.obj_conn||64}%</strong> objetivo</div>
+            <div style="font-size:11px;color:var(--ws);margin-top:2px;">${gl.ha_conn ? gl.ha_conn.toLocaleString('es-AR') : '—'} ha</div>
+          </div>
+        </div>
+        <div style="height:8px;background:var(--bd);border-radius:4px;overflow:hidden;">
+          <div style="height:8px;width:${Math.min(100,(gl.pct_conn||0)/(gl.obj_conn||64)*100)}%;background:${glConnSt};border-radius:4px;transition:width 0.6s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:5px;">
+          <span style="font-size:9px;color:var(--wx);">0%</span>
+          <span style="font-size:9px;color:${glConnSt};font-weight:600;">${Math.round((gl.pct_conn||0)/(gl.obj_conn||64)*100)}% del objetivo</span>
+          <span style="font-size:9px;color:var(--wx);">${gl.obj_conn||64}%</span>
+        </div>
+      </div>
+
+      <!-- Ha Alt. Conectadas -->
+      <div style="background:var(--bb);border-radius:var(--r12);padding:16px;border-left:4px solid ${glHehSt};">
+        <div style="font-size:10px;color:var(--ws);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">Ha Alt. Conectadas</div>
+        <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+          <span style="font-family:var(--font-mono);font-size:44px;font-weight:700;color:${glHehSt};line-height:1;">${gl.pct_heh||0}%</span>
+          <div style="padding-bottom:6px;">
+            <div style="font-size:13px;color:var(--ws);">de <strong style="color:var(--wm);font-size:16px;">${gl.obj_heh||12}%</strong> objetivo</div>
+            <div style="font-size:11px;color:var(--ws);margin-top:2px;">${gl.ha_heh ? gl.ha_heh.toLocaleString('es-AR') : '—'} ha</div>
+          </div>
+        </div>
+        <div style="height:8px;background:var(--bd);border-radius:4px;overflow:hidden;">
+          <div style="height:8px;width:${Math.min(100,(gl.pct_heh||0)/(gl.obj_heh||12)*100)}%;background:${glHehSt};border-radius:4px;transition:width 0.6s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:5px;">
+          <span style="font-size:9px;color:var(--wx);">0%</span>
+          <span style="font-size:9px;color:${glHehSt};font-weight:600;">${Math.round((gl.pct_heh||0)/(gl.obj_heh||12)*100)}% del objetivo</span>
+          <span style="font-size:9px;color:var(--wx);">${gl.obj_heh||12}%</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  ${buildHomeLicSummary()}
+
+  <!-- Embudo global de Engagement -->
+  ${buildEngagementFunnel(Object.values(DATA.orgsPorSuc||{}).flat(), 'Embudo Digital · Agronorte Global')}
+
+  <div class="suc-grid-label">Seleccioná una sucursal</div>
+  <div class="suc-grid">
+    ${sorted.map(suc => {
+      const scoreVal = score(suc);
+      const u = urg(scoreVal);
+      const stConn = semaforo(suc.pct_conn, suc.obj_conn);
+      const stHeh  = semaforo(suc.pct_heh,  suc.obj_heh);
+      const orgs = DATA.dispPorSuc[suc.nombre]?.orgs || 0;
+      const pctConn = suc.pct_conn!==null ? suc.pct_conn.toFixed(1)+"%" : "—";
+      const pctHeh  = suc.pct_heh!==null  ? suc.pct_heh.toFixed(1)+"%"  : "—";
+      return `
+      <div class="suc-home-card urg-${u}" onclick="openSuc(${suc.id})">
+        <div class="shc-score" style="color:${sc(u)};">${scoreVal.toFixed(0)}</div>
+        <div class="shc-name">${suc.nombre}</div>
+        <div class="shc-kpis">
+          <div class="shc-kpi">
+            <div class="shc-kpi-val" style="color:${sc(stConn)};">${pctConn}</div>
+            <div class="shc-kpi-obj" style="color:${sc(stConn)}88;">obj ${suc.obj_conn||"—"}%</div>
+            <div class="shc-kpi-bar"><div class="shc-kpi-bar-fill" style="width:${suc.obj_conn?Math.min(100,Math.round((suc.pct_conn||0)/suc.obj_conn*100)):0}%;background:${sc(stConn)};"></div></div>
+            <div class="shc-kpi-lbl">Ha Conn.</div>
+          </div>
+          <div class="shc-kpi">
+            <div class="shc-kpi-val" style="color:${sc(stHeh)};">${pctHeh}</div>
+            <div class="shc-kpi-obj" style="color:${sc(stHeh)}88;">obj ${suc.obj_heh||"—"}%</div>
+            <div class="shc-kpi-bar"><div class="shc-kpi-bar-fill" style="width:${suc.obj_heh?Math.min(100,Math.round((suc.pct_heh||0)/suc.obj_heh*100)):0}%;background:${sc(stHeh)};"></div></div>
+            <div class="shc-kpi-lbl">Alt. Conn.</div>
+          </div>
+        </div>
+        <div class="shc-bar">
+          <div class="shc-bar-seg" style="background:${sc(stConn)};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(stHeh)};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_cosecha,suc.obj_cosecha))};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_spray,suc.obj_spray))};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_sia,suc.obj_sia))};opacity:0.8;"></div>
+          <div class="shc-bar-seg" style="background:${sc(semaforo(suc.pct_sc,suc.obj_sc))};opacity:0.8;"></div>
+        </div>
+        <div class="shc-orgs">${orgs} organiz. · ${suc.ha_opp.toLocaleString('es-AR')} ha oport.</div>
+      </div>`;
+    }).join("")}
+  </div>
+  <div style="height:24px;"></div>`;
+
+  document.getElementById("screen-home").innerHTML = html;
+}
+
+// ── RENDER SUCURSAL ───────────────────────────────────────────────────────────
+function renderSuc(id){
+  const suc = DATA.sucursales.find(s=>s.id===id);
+  if(!suc) return;
+  currentSuc = id;
+  const scoreVal = score(suc); const u = urg(scoreVal);
+  const disp = DATA.dispPorSuc[suc.nombre]||{orgs:0,monitores:0,receptores:0,modems:0,modems_activos:0,total:0};
+
+  const html = `
+  <div class="suc-hero">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <div>
+        <div class="suc-hero-name">${suc.nombre}</div>
+        <div class="suc-hero-meta">
+          <span class="suc-hero-badge" style="background:${sb(u)};color:${sc(u)};border:1px solid ${sc(u)}33;">
+            ${u==="red"?"⚠ Requiere atención":u==="yellow"?"~ Cerca del objetivo":"✓ En objetivo"}
+          </span>
+          <span class="suc-hero-score">Score ${scoreVal.toFixed(1)} · ${DATA.trim}</span>
+        </div>
+      </div>
+      <button onclick="downloadSucursal(${suc.id})" style="background:#1A3A1A;border:1px solid #2D7A2D;color:#6EE26E;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+        ⬇ Excel
+      </button>
+    </div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="sum-card" style="border-top-color:var(--ws);">
+      <div class="sum-val" style="color:var(--wm);">${suc.ha_opp.toLocaleString('es-AR')}</div>
+      <div class="sum-lbl">Ha Oportunidad</div>
+    </div>
+    <div class="sum-card" style="border-top-color:var(--blue);">
+      <div class="sum-val" style="color:var(--blue);">${disp.orgs}</div>
+      <div class="sum-lbl">Organizaciones</div>
+      <div class="sum-sub">${disp.total} dispositivos</div>
+    </div>
+    <div class="sum-card" style="border-top-color:${sc(semaforo(suc.pct_conn,suc.obj_conn))};">
+      <div class="sum-val" style="color:${sc(semaforo(suc.pct_conn,suc.obj_conn))};">${suc.pct_conn!==null?suc.pct_conn.toFixed(1)+"%":"—"}</div>
+      <div class="sum-lbl">Ha Conectadas</div>
+      <div class="sum-sub">obj ${suc.obj_conn||"—"}% · ${suc.ha_conn.toLocaleString('es-AR')} ha</div>
+    </div>
+    <div class="sum-card" style="border-top-color:${sc(semaforo(suc.pct_heh,suc.obj_heh))};">
+      <div class="sum-val" style="color:${sc(semaforo(suc.pct_heh,suc.obj_heh))};">${suc.pct_heh!==null?suc.pct_heh.toFixed(1)+"%":"—"}</div>
+      <div class="sum-lbl">Ha Alt. Conectadas</div>
+      <div class="sum-sub">obj ${suc.obj_heh||"—"}% · ${suc.ha_heh.toLocaleString('es-AR')} ha</div>
+    </div>
+  </div>
+
+  <div class="tabs-wrap">
+    <button class="tab-btn ${currentTab==="indicadores"?"active":""}" onclick="switchTab('indicadores')">Indicadores</button>
+    <button class="tab-btn ${currentTab==="organizaciones"?"active":""}" onclick="switchTab('organizaciones')">Organizaciones</button>
+    <button class="tab-btn" onclick="goOrgs()" style="color:var(--ws);margin-left:auto;">Ver todas →</button>
+  </div>
+
+  <div class="tab-content ${currentTab==="indicadores"?"active":""}" id="tab-indicadores">${buildTabIndicadores(suc)}</div>
+  <div class="tab-content ${currentTab==="organizaciones"?"active":""}" id="tab-organizaciones">${buildTabOrganizaciones(suc)}</div>
+  <div style="height:24px;"></div>`;
+
+  document.getElementById("screen-suc").innerHTML = html;
+}
+
+function buildTabIndicadores(suc){
+  const kpisA = [
+    {lbl:"Ha Conectadas",val:suc.ha_conn,obj:null,unit:" ha"},
+    {lbl:"% Ha Conn.",val:suc.pct_conn,obj:suc.obj_conn},
+    {lbl:"Ha Alt. Conn.",val:suc.ha_heh,obj:null,unit:" ha"},
+    {lbl:"% Ha Alt.",val:suc.pct_heh,obj:suc.obj_heh},
+    {lbl:"Tec. Cosecha",val:suc.pct_cosecha,obj:suc.obj_cosecha},
+    {lbl:"Spray Tech",val:suc.pct_spray,obj:suc.obj_spray},
+  ];
+  const kpisU = [
+    {lbl:"SIA",val:suc.pct_sia,obj:suc.obj_sia},
+    {lbl:"INC PRO",val:suc.pct_incpro,obj:suc.obj_incpro},
+    {lbl:"EA",val:suc.pct_ea,obj:suc.obj_ea},
+    {lbl:"Section Ctrl.",val:suc.pct_sc,obj:suc.obj_sc},
+    {lbl:"AutoTrac",val:suc.pct_autotrac,obj:suc.obj_autotrac},
+  ];
+
+  const chipHtml = (k) => {
+    const unit = k.unit||"%";
+    const isHa = unit===" ha";
+    const st = semaforo(k.val, k.obj);
+    const col = sc(st);
+    const bg = sb(st);
+    const hasVal = k.val!==null && k.val!==undefined;
+    const pct = k.obj&&hasVal ? Math.min(100,Math.round((k.val/k.obj)*100)) : 0;
+    const alcStr = k.obj&&hasVal ? Math.round(pct)+'% del obj.' : '';
+
+    // Sin dato
+    if(!hasVal) return `
+    <div class="ind-chip-empty">
+      <div class="ind-chip-lbl">${k.lbl}</div>
+      <div class="ind-chip-empty-val">—</div>
+      <div style="font-size:9px;color:var(--bt);margin-top:4px;">Sin datos</div>
+    </div>`;
+
+    // Con dato y objetivo
+    if(k.obj) return `
+    <div class="ind-chip" style="background:${bg};border:1px solid ${col}33;">
+      <div class="ind-chip-lbl">${k.lbl}</div>
+      <div class="ind-chip-val" style="color:${col};">${k.val.toFixed(isHa?0:1)}${unit}</div>
+      <div class="ind-chip-obj">de <strong style="color:var(--wm);">${k.obj}${unit}</strong> objetivo</div>
+      <div class="ind-chip-bar"><div class="ind-chip-bar-fill" style="width:${pct}%;background:${col};"></div></div>
+      <div class="ind-chip-pct" style="color:${col};">${alcStr}</div>
+    </div>`;
+
+    // Con dato sin objetivo (ha absolutas)
+    return `
+    <div class="ind-chip" style="background:var(--bs);border:1px solid var(--bd);">
+      <div class="ind-chip-lbl">${k.lbl}</div>
+      <div class="ind-chip-val-ha">${Number(k.val).toLocaleString('es-AR')}${unit}</div>
+    </div>`;
+  };
+
+  // Gaps
+  const allK = [
+    {lbl:"Ha Conectadas %",v:suc.pct_conn,o:suc.obj_conn,g:"ADOPTION"},
+    {lbl:"Ha Alt. Conn. %",v:suc.pct_heh,o:suc.obj_heh,g:"ADOPTION"},
+    {lbl:"Tec. Cosecha",v:suc.pct_cosecha,o:suc.obj_cosecha,g:"ADOPTION"},
+    {lbl:"Spray Tech",v:suc.pct_spray,o:suc.obj_spray,g:"ADOPTION"},
+    {lbl:"SIA",v:suc.pct_sia,o:suc.obj_sia,g:"UTIL"},
+    {lbl:"INC PRO",v:suc.pct_incpro,o:suc.obj_incpro,g:"UTIL"},
+    {lbl:"EA",v:suc.pct_ea,o:suc.obj_ea,g:"UTIL"},
+    {lbl:"Section Control",v:suc.pct_sc,o:suc.obj_sc,g:"UTIL"},
+    {lbl:"AutoTrac",v:suc.pct_autotrac,o:suc.obj_autotrac,g:"UTIL"},
+  ];
+  const gaps = allK.filter(x=>x.o&&x.v!==null&&x.v!==undefined&&x.v<x.o).sort((a,b)=>(b.o-b.v)-(a.o-a.v));
+  const enObj = allK.filter(x=>x.o&&x.v!==null&&x.v!==undefined&&x.v>=x.o);
+
+  return `
+  <div class="ind-section">
+    <div class="ind-section-title">
+      <div class="ind-badge" style="background:var(--gdk);border:1px solid var(--gd);color:var(--g);">ADOPTION</div>
+      <div class="ind-line"></div>
+    </div>
+    <div class="ind-grid">${kpisA.map(chipHtml).join("")}</div>
+  </div>
+  <div class="ind-section">
+    <div class="ind-section-title">
+      <div class="ind-badge" style="background:var(--yd);border:1px solid #3A2D00;color:var(--y);">UTILIZATION</div>
+      <div class="ind-line"></div>
+    </div>
+    <div class="ind-grid">${kpisU.map(chipHtml).join("")}</div>
+  </div>
+  ${gaps.length>0?`
+  <div class="ind-section">
+    <div class="ind-section-title">
+      <div class="ind-badge" style="background:#1A0A0A;border:1px solid #3A1010;color:var(--r);">OPORTUNIDADES</div>
+      <div class="ind-line"></div>
+    </div>
+    <div class="opp-list">
+      ${gaps.map(x=>{
+        const gap=x.o-x.v; const pct=Math.round((x.v/x.o)*100);
+        const col=gap>15?"#E05252":"#F5C842";
+        const gbg=x.g==="ADOPTION"?"#0A1A0A":"#1A1500";
+        const gcol=x.g==="ADOPTION"?"#6EE26E":"#F5C842";
+        return `<div class="opp-item">
+          <span class="opp-tag" style="background:${gbg};color:${gcol};">${x.g}</span>
+          <span class="opp-name">${x.lbl}</span>
+          <div class="opp-right">
+            <div class="opp-track"><div class="opp-track-fill" style="width:${pct}%;background:${col};"></div></div>
+            <span class="opp-nums">${x.v.toFixed(1)}% / ${x.o}%</span>
+            <span class="opp-gap" style="color:${col};">−${gap.toFixed(1)}%</span>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+  </div>`:""}
+  ${enObj.length>0?`<div style="font-size:12px;color:var(--g);padding:8px 0;">✓ En objetivo: ${enObj.map(x=>x.lbl).join(", ")}</div>`:""}`;
+}
+
+function buildTabOrganizaciones(suc){
+  const orgs = DATA.orgsPorSuc[suc.nombre]||[];
+  if(orgs.length===0) return `<div class="empty"><div class="empty-icon">🏢</div>Sin organizaciones registradas</div>`;
+  const lics = DATA.licPorSuc[suc.nombre]||[];
+  const licByOrg = {};
+  lics.forEach(l=>{ if(!licByOrg[l.org_id]) licByOrg[l.org_id]=[]; licByOrg[l.org_id].push(l); });
+  const sorted = [...orgs].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  return `
+  <input class="org-search" type="text" placeholder="🔍 Buscar organización o ciudad..." oninput="filterOrgs(this.value)" id="org-search">
+  <div class="org-stats-row">
+    <span class="org-stat"><strong>${orgs.length}</strong> organizaciones</span>
+    <span class="org-stat"><strong>${orgs.reduce((s,o)=>s+o.total,0)}</strong> dispositivos</span>
+    <span class="org-stat"><strong>${lics.length}</strong> licencias</span>
+  </div>
+  <div class="org-list" id="org-list">
+    ${sorted.map((o,i) => buildOrgAccordion(o, licByOrg[o.id]||[], i)).join("")}
+  </div>`;
+}
+
+function buildOrgAccordion(org, lics, idx){
+  const estCol={"VENCIDA":"#E05252","CRÍTICA":"#E05252","PRÓXIMA":"#F5C842","ACTIVA":"#6EE26E","Sin fecha":"#888"};
+  const estBg={"VENCIDA":"#1A0A0A","CRÍTICA":"#1A0A0A","PRÓXIMA":"#1A1500","ACTIVA":"#0A1A0A","Sin fecha":"#111"};
+  const pctAct = org.modems>0 ? Math.round(org.modems_activos/org.modems*100) : 0;
+  const modColor = pctAct>=50?"#6EE26E":pctAct>=25?"#F5C842":"#E05252";
+  const licUrg = lics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA").length;
+
+  // CDE data
+  const cde = DATA.cdeByOrg ? DATA.cdeByOrg[String(org.id)] : null;
+
+  const ENG_STYLE = {
+    "Highly Engaged":         {bg:"#0A1A0A", col:"#6EE26E"},
+    "Highly Engaged Retained":{bg:"#1A1500", col:"#F5C842"},
+    "R12 Digitally Engaged":  {bg:"#0A101A", col:"#7DC6FF"},
+    "Land & Digital":         {bg:"#1A0A1A", col:"#D4A0FF"},
+  };
+
+  // Ha conectadas por org — declarar ANTES de chips
+  const orgHa = DATA.orgHa ? DATA.orgHa[String(org.id)] : null;
+  const heoColor = orgHa?.heo === 'Y' ? 'var(--g)' : 'var(--ws)';
+  const sinHaConEquipo = orgHa && orgHa.ha_conn === 0 && (org.monitores + org.receptores + org.modems) > 0;
+
+  const chips = [
+    org.monitores>0   ? `<span class="org-chip has-data" title="Monitores">📺 ${org.monitores}</span>` : "",
+    org.receptores>0  ? `<span class="org-chip has-data" title="Receptores">📡 ${org.receptores}</span>` : "",
+    org.modems>0      ? `<span class="org-chip has-data" style="color:${modColor};border-color:${modColor}44;" title="${pctAct}% activos">📶 ${org.modems}</span>` : "",
+    lics.length>0     ? `<span class="org-chip has-data" style="color:${licUrg>0?"#E05252":"#6EE26E"};border-color:${licUrg>0?"#E05252":"#6EE26E"}44;" title="Licencias">📋 ${lics.length}</span>` : "",
+    cde ? `<span class="org-chip has-data" style="color:${(ENG_STYLE[cde.eng_level]||{col:"#888"}).col};border-color:${(ENG_STYLE[cde.eng_level]||{col:"#888"}).col}44;" title="${cde.eng_level}">⭐ ${cde.prom_r12} VCA</span>` : "",
+    sinHaConEquipo ? `<span class="org-chip has-data" style="color:var(--y);border-color:var(--y)44;background:#1A1200;" title="Sin ha configuradas">⚠️ Sin ha</span>` : "",
+  ].filter(Boolean).join("");
+
+  const haConnRow = orgHa ? (() => {
+    if(sinHaConEquipo) {
+      return '<div style="background:#1A1200;border:1px solid #F5C84255;border-radius:var(--r8);padding:10px 12px;margin-top:8px;display:flex;align-items:center;gap:10px;">' +
+        '<span style="font-size:18px;">⚠️</span>' +
+        '<div>' +
+          '<div style="font-size:12px;font-weight:700;color:var(--y);">Sin ha conectadas registradas</div>' +
+          '<div style="font-size:10px;color:var(--ws);margin-top:2px;">Tiene ' + (org.monitores?org.monitores+' monitor'+(org.monitores>1?'es':''):'') + (org.monitores&&(org.receptores||org.modems)?', ':'') + (org.receptores?org.receptores+' receptor'+(org.receptores>1?'es':''):'') + (org.receptores&&org.modems?', ':'') + (org.modems?org.modems+' modem'+(org.modems>1?'s MTG':'  MTG'):'') + ' — oportunidad de configuración en Operations Center</div>' +
+        '</div>' +
+      '</div>';
+    }
+    return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;">' +
+      '<div class="org-disp-card"><div class="org-disp-val" style="font-size:16px;color:var(--g);">' + orgHa.ha_conn.toLocaleString('es-AR') + '</div><div class="org-disp-lbl">Ha Conectadas</div></div>' +
+      '<div class="org-disp-card"><div class="org-disp-val" style="font-size:16px;color:var(--y);">' + orgHa.ha_heh.toLocaleString('es-AR') + '</div><div class="org-disp-lbl">Ha Alt. Conn.</div></div>' +
+      '<div class="org-disp-card" style="border-color:' + (orgHa.ha_riesgo>0?'var(--r)':'var(--bd)') + '"><div class="org-disp-val" style="font-size:16px;color:' + (orgHa.ha_riesgo>0?'var(--r)':'var(--ws)') + ';">' + orgHa.ha_riesgo.toLocaleString('es-AR') + '</div><div class="org-disp-lbl">Ha en Riesgo</div></div>' +
+      '</div>' +
+      // Labores
+      '<div style="margin-top:10px;">' +
+        '<div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Ha conectadas por labor</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;">' +
+          [
+            ['🌱 Siembra', orgHa.ha_siembra||0, orgHa.ha_conn],
+            ['🚜 Prep. Suelo', orgHa.ha_prep||0, orgHa.ha_conn],
+            ['💧 Pulverización', orgHa.ha_pulv||0, orgHa.ha_conn],
+            ['🌾 Cosecha', orgHa.ha_cosecha||0, orgHa.ha_conn],
+          ].map(([lbl, val, total]) => {
+            const pct = total > 0 ? Math.round(val/total*100) : 0;
+            const col = pct >= 80 ? '#6EE26E' : pct >= 40 ? '#F5C842' : '#E05252';
+            return '<div style="background:var(--bb);border-radius:6px;padding:8px 10px;">' +
+              '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">' +
+                '<span style="font-size:10px;color:var(--wm);">' + lbl + '</span>' +
+                '<span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:' + col + ';">' + pct + '%</span>' +
+              '</div>' +
+              '<div style="height:4px;background:var(--bd);border-radius:2px;">' +
+                '<div style="height:4px;width:' + pct + '%;background:' + col + ';border-radius:2px;"></div>' +
+              '</div>' +
+              '<div style="font-size:9px;color:var(--ws);margin-top:3px;">' + val.toLocaleString('es-AR') + ' ha</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-top:6px;"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:' + (orgHa.heo==='Y'?'var(--gdk)':'var(--bs)') + ';color:' + heoColor + ';border:1px solid ' + heoColor + '44;">HEO: ' + (orgHa.heo==='Y'?'✓ Sí':'✗ No') + '</span></div>';
+  })() : '';
+
+  // Panel dispositivos con modelos
+  const models = DATA.orgModels ? DATA.orgModels[String(org.id)] : null;
+
+  const buildModelTags = (modelDict) => {
+    if(!modelDict || Object.keys(modelDict).length===0) return "";
+    return Object.entries(modelDict).map(([modelo, cant]) =>
+      '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bb);border:1px solid var(--bd);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--wm);white-space:nowrap;">' +
+        '<span style="color:var(--blue);font-weight:600;">' + modelo + '</span>' +
+        '<span style="color:var(--ws);">×' + cant + '</span>' +
+      '</span>'
+    ).join("");
+  };
+
+  const monModels = models && Object.keys(models.monitores||{}).length>0
+    ? '<div style="margin-top:8px;"><div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Modelos de monitores</div><div style="display:flex;flex-wrap:wrap;gap:4px;">' + buildModelTags(models.monitores) + '</div></div>'
+    : "";
+  const recModels = models && Object.keys(models.receptores||{}).length>0
+    ? '<div style="margin-top:8px;"><div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Modelos de receptores</div><div style="display:flex;flex-wrap:wrap;gap:4px;">' + buildModelTags(models.receptores) + '</div></div>'
+    : "";
+  const modemsRow = org.modems>0
+    ? '<div class="org-modems-row"><div class="org-modems-pct" style="color:'+modColor+';">'+pctAct+'%</div><div class="org-modems-info">Modems activos<br><span style="font-size:10px;color:var(--wx);">'+org.modems_activos+' de '+org.modems+' activos</span></div></div>'
+    : "";
+
+  const dispPanel = `
+  <div class="org-detail-section">
+    <div class="org-detail-title">Conectividad & Dispositivos</div>
+    ${haConnRow}
+    <div class="org-disp-grid" style="margin-top:8px;">
+      <div class="org-disp-card"><div class="org-disp-val">${org.monitores}</div><div class="org-disp-lbl">Monitores</div></div>
+      <div class="org-disp-card"><div class="org-disp-val">${org.receptores}</div><div class="org-disp-lbl">Receptores</div></div>
+      <div class="org-disp-card"><div class="org-disp-val">${org.modems}</div><div class="org-disp-lbl">Modems MTG</div></div>
+    </div>
+    ${monModels}${recModels}${modemsRow}
+  </div>`;
+
+  // Panel CDE
+  const cdePanel = cde ? (() => {
+    const eng = ENG_STYLE[cde.eng_level] || {bg:"#111",col:"#888"};
+    const promCol = cde.prom_r12>=4 ? "#6EE26E" : "#E05252";
+    const vcasYN = [
+      {lbl:"Setup File",    val:cde.vca_setup},
+      {lbl:"Work Plan",     val:cde.vca_workplan},
+      {lbl:"Field/Bound.",  val:cde.vca_field},
+      {lbl:"Equip. Mon.",   val:cde.vca_equip},
+      {lbl:"Work Details",  val:cde.vca_work},
+      {lbl:"Reports",       val:cde.vca_reports},
+    ];
+    const vcasNum = [
+      {lbl:"WP Created R12",  val:cde.vca_wp_created},
+      {lbl:"WP Completed R12",val:cde.vca_wp_completed},
+      {lbl:"Files Uploaded",  val:cde.vca_files},
+      {lbl:"Campos s/Límite", val:cde.vca_no_boundary},
+      {lbl:"s/AutoLímite",    val:cde.vca_no_auto_bnd},
+      {lbl:"c/Límite Activo", val:cde.vca_active_bnd},
+    ];
+    return `
+    <div class="org-detail-section">
+      <div class="org-detail-title">Engagement & VCAs</div>
+
+      <!-- Resumen engagement -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+        <span class="eng-badge" style="background:${eng.bg};color:${eng.col};border:1px solid ${eng.col}44;">${cde.eng_level}</span>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--bb);border-radius:var(--r8);padding:6px 12px;border:1px solid var(--bd);">
+          <span class="prom-r12-big" style="color:${promCol};">${cde.prom_r12}</span>
+          <div>
+            <div style="font-size:11px;color:${promCol};font-weight:600;">VCA R12</div>
+            <div style="font-size:9px;color:var(--ws);">mín. 4 requeridas</div>
+          </div>
+        </div>
+        ${cde.risk_ha>0?`<div style="background:#1A0A0A;border:1px solid #E0525244;border-radius:var(--r8);padding:6px 12px;">
+          <div style="font-family:var(--font-mono);font-size:16px;font-weight:500;color:#E05252;">${cde.risk_ha.toFixed(1)} ha</div>
+          <div style="font-size:9px;color:#888;">Ha en riesgo</div>
+        </div>`:""}
+      </div>
+
+      <!-- VCAs Y/N -->
+      <div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Acciones completadas</div>
+      <div class="vca-grid" style="margin-bottom:12px;">
+        ${vcasYN.map(v=>{
+          const isY = v.val==="Y";
+          return `<div class="vca-chip" style="background:${isY?"#0A1A0A":"#1A0A0A"};border:1px solid ${isY?"#2D7A2D44":"#E0525244"};">
+            <div class="vca-chip-val" style="color:${isY?"#6EE26E":"#E05252"};">${isY?"✓":"✗"}</div>
+            <div class="vca-chip-lbl">${v.lbl}</div>
+          </div>`;
+        }).join("")}
+      </div>
+
+      <!-- VCAs numéricas -->
+      <div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Detalle de acciones (R12)</div>
+      <div class="vca-num-grid">
+        ${vcasNum.map(v=>{
+          const isZero = v.val===0||v.val===null;
+          return `<div class="vca-num-card" style="border-color:${isZero?"#E0525244":"var(--bd)"};">
+            <div class="vca-num-val" style="color:${isZero?"#E05252":"#CCCCCC"};">${v.val}</div>
+            <div class="vca-num-lbl">${v.lbl}</div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  })() : "";
+
+  // Panel licencias
+  const licPanel = lics.length>0 ? `
+  <div class="org-detail-section">
+    <div class="org-detail-title">Licencias (${lics.length})</div>
+    <div class="org-lic-list">
+      ${[...lics].sort((a,b)=>(a.dias||9999)-(b.dias||9999)).map(l=>{
+        const est=l.estado||"Sin fecha";
+        const col=estCol[est]||"#888";
+        const fv=l.fecha_venc?(l.fecha_venc instanceof Date?l.fecha_venc.toLocaleDateString("es-AR"):String(l.fecha_venc).slice(0,10)):"—";
+        const dias=l.dias!==null&&l.dias!==undefined?l.dias:"—";
+        return `<div class="org-lic-item" style="border-left-color:${col};">
+          <div class="org-lic-ns">${l.ns||"—"}</div>
+          <div class="org-lic-tipo">${(l.tipo||"").split(" - ")[0]}</div>
+          <div class="org-lic-footer">
+            <span class="org-lic-fecha">Vence: ${fv}</span>
+            <span class="org-lic-dias" style="color:${col};">${typeof dias==="number"?dias+" días":dias}</span>
+            <span class="org-lic-badge" style="background:${estBg[est]||"#111"};color:${col};">${est}</span>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+  </div>` : "";
+
+  return `
+  <div class="org-accordion" id="org-acc-${idx}" data-nombre="${org.nombre.toLowerCase()}" data-ciudad="${(org.ciudad||"").toLowerCase()}">
+    <div class="org-acc-header" onclick="toggleOrg(${idx})">
+      <div class="org-acc-left">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="org-acc-name">${org.nombre}</div>
+          <button onclick="event.stopPropagation();openReasignar('${org.id}','${org.nombre.replace(/'/g,"\\'")}',${idx})"
+            style="background:var(--bs);border:1px solid var(--bd);color:var(--ws);border-radius:6px;padding:2px 8px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap;"
+            title="Reasignar sucursal">↻ sucursal</button>
+        </div>
+        <div class="org-acc-city">${org.ciudad||"—"}</div>
+      </div>
+      <div class="org-acc-chips">${chips}</div>
+      <div class="org-acc-arrow">▼</div>
+    </div>
+    <div class="org-acc-body">
+      ${dispPanel}
+      ${cdePanel}
+      ${licPanel}
+    </div>
+  </div>`;
+}
+
+// ── PRECIOS DE LISTA POR TIPO DE LICENCIA (USD) ───────────────────────────────
+const LIC_PRECIOS = {
+  "SF-RTK":                               1500.00,
+  "SF2":                                  1050.00, // 12 months precio de lista
+  "SF3":                                  1050.00, // 1 Year precio de lista
+  "4640 Premium 3.0":                     1375.00,
+  "G5 Advanced - 7/8/9 Series Tractor":   650.00,
+  "G5 Advanced - Self-Propelled Application": 650.00,
+  "G5 Advanced - Universal":              750.00,
+  "G5 Advanced - Combine":                650.00,
+  "G5 Advanced - 6 Series Tractor":       650.00,
+};
+
+function getPrecioLic(tipo){
+  if(!tipo) return null;
+  const t = tipo.replace(' - Stellar License','').trim();
+  return LIC_PRECIOS[t] || null;
+}
+
+function fmtUSD(n){
+  return n ? 'USD ' + n.toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:0}) : null;
+}
+let pendingAssignments = {};
+
+const ENG_LEVELS = [
+  { key:"Highly Engaged",          col:"#367C2B", bg:"#0A1A0A", label:"Highly Engaged" },
+  { key:"Highly Engaged Retained", col:"#F5C842", bg:"#1A1500", label:"HE Retained" },
+  { key:"R12 Digitally Engaged",   col:"#7DC6FF", bg:"#0A101A", label:"R12 Digital" },
+  { key:"Land & Digital",          col:"#D4A0FF", bg:"#1A0A1A", label:"Land & Digital" },
+];
+
+function buildEngagementFunnel(orgs, titulo){
+  const total = orgs.length;
+  if(total===0) return "";
+  const cde = DATA.cdeByOrg || {};
+  const counts = {};
+  ENG_LEVELS.forEach(e => counts[e.key] = 0);
+  let sinCDE = 0;
+  orgs.forEach(o => {
+    const d = cde[String(o.id)];
+    if(d && counts[d.eng_level] !== undefined) counts[d.eng_level]++;
+    else sinCDE++;
+  });
+
+  const bars = ENG_LEVELS.map(e => {
+    const n = counts[e.key];
+    const pct = total>0 ? Math.round(n/total*100) : 0;
+    const barW = Math.max(pct, 2);
+    return '<div style="margin-bottom:8px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">' +
+        '<span style="font-size:11px;font-weight:600;color:' + e.col + ';">' + e.label + '</span>' +
+        '<span style="font-family:var(--font-mono);font-size:11px;color:var(--wm);">' + n + ' · ' + pct + '%</span>' +
+      '</div>' +
+      '<div style="height:8px;background:var(--bd);border-radius:4px;">' +
+        '<div style="height:8px;width:' + barW + '%;background:' + e.col + ';border-radius:4px;transition:width 0.4s;"></div>' +
+      '</div>' +
+    '</div>';
+  }).join("");
+
+  const sinCDEStr = sinCDE>0 ? '<div style="margin-top:4px;font-size:10px;color:var(--ws);">Sin datos CDE: ' + sinCDE + '</div>' : '';
+  const tituloStr = titulo || 'Embudo Digital · Engagement';
+
+  return '<div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);padding:14px;margin-bottom:14px;border-top:3px solid var(--y);">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+      '<span style="font-family:var(--font-title);font-size:13px;font-weight:800;">' + tituloStr + '</span>' +
+      '<span style="font-size:10px;color:var(--ws);">' + total + ' organizaciones</span>' +
+    '</div>' +
+    bars + sinCDEStr +
+  '</div>';
+}
+
+function buildLicSummary(lics, compact){
+  if(!lics || lics.length===0) return compact ? "" :
+    '<div style="text-align:center;padding:20px;color:var(--ws);font-size:12px;">Sin licencias registradas</div>';
+
+  const estCol={"VENCIDA":"#E05252","CRÍTICA":"#E05252","PRÓXIMA":"#F5C842","ACTIVA":"#6EE26E","Sin fecha":"#888"};
+  const estBg= {"VENCIDA":"#1A0A0A","CRÍTICA":"#1A0A0A","PRÓXIMA":"#1A1500","ACTIVA":"#0A1A0A","Sin fecha":"#111"};
+  const v=lics.filter(l=>l.estado==="VENCIDA").length;
+  const c=lics.filter(l=>l.estado==="CRÍTICA").length;
+  const p=lics.filter(l=>l.estado==="PRÓXIMA").length;
+  const a=lics.filter(l=>l.estado==="ACTIVA").length;
+
+  const oppTotal = lics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA")
+    .reduce((sum,l)=>sum+(getPrecioLic(l.tipo)||0), 0);
+
+  const stats = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">' +
+    [["VENCIDAS",v,"#E05252","#1A0A0A"],["CRÍTICAS",c,"#E05252","#1A0A0A"],["PRÓXIMAS",p,"#F5C842","#1A1500"],["ACTIVAS",a,"#6EE26E","#0A1A0A"]]
+    .map(([lbl,n,col,bg])=>
+      '<div style="background:'+bg+';border:1px solid '+col+'33;border-radius:var(--r8);padding:10px;text-align:center;">' +
+        '<div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:'+col+';">'+n+'</div>' +
+        '<div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">'+lbl+'</div>' +
+      '</div>'
+    ).join("") + '</div>' +
+    (oppTotal>0 ? '<div style="background:#1A1200;border:1px solid #F5C84244;border-radius:var(--r8);padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">' +
+      '<span style="font-size:18px;">💰</span>' +
+      '<div>' +
+        '<div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:#F5C842;">' + fmtUSD(oppTotal) + '</div>' +
+        '<div style="font-size:10px;color:var(--ws);margin-top:1px;">Oportunidad total en renovaciones vencidas/críticas</div>' +
+      '</div>' +
+    '</div>' : '');
+
+  if(compact) return stats;
+
+  // Agrupar por sucursal
+  const bySuc = {};
+  lics.forEach(l=>{
+    const s = l.sucursal||"Sin asignar";
+    if(!bySuc[s]) bySuc[s]=[];
+    bySuc[s].push(l);
+  });
+
+  // Ordenar sucursales por cantidad de urgentes
+  const sucOrdenadas = Object.entries(bySuc).sort((a,b)=>{
+    const urgA = a[1].filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA").length;
+    const urgB = b[1].filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA").length;
+    return urgB - urgA;
+  });
+
+  const grupos = sucOrdenadas.map(([suc, slics], si)=>{
+    const sv = slics.filter(l=>l.estado==="VENCIDA").length;
+    const sc = slics.filter(l=>l.estado==="CRÍTICA").length;
+    const sp = slics.filter(l=>l.estado==="PRÓXIMA").length;
+    const sa = slics.filter(l=>l.estado==="ACTIVA").length;
+    const urgColor = sv+sc>0?"#E05252":sp>0?"#F5C842":"#6EE26E";
+
+    // Oportunidad total sucursal (vencidas + críticas)
+    const oppTotal = slics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA")
+      .reduce((sum,l)=>sum+(getPrecioLic(l.tipo)||0), 0);
+
+    // Detalle de orgs
+    const byOrg = {};
+    slics.forEach(l=>{
+      const k = l.org_nombre||"—";
+      if(!byOrg[k]) byOrg[k]=[];
+      byOrg[k].push(l);
+    });
+
+    const orgRows = Object.entries(byOrg).sort((a,b)=>{
+      const uA = a[1].filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA").length;
+      const uB = b[1].filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA").length;
+      return uB-uA;
+    }).map(([orgNombre, olics])=>{
+      const ov = olics.filter(l=>l.estado==="VENCIDA").length;
+      const oc = olics.filter(l=>l.estado==="CRÍTICA").length;
+      const orgOpp = olics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA")
+        .reduce((sum,l)=>sum+(getPrecioLic(l.tipo)||0), 0);
+
+      const licRows = olics.sort((a,b)=>(a.dias||9999)-(b.dias||9999)).map(l=>{
+        const est=l.estado||"Sin fecha";
+        const col=estCol[est]||"#888";
+        const fv=l.fecha_venc?String(l.fecha_venc).slice(0,10):"—";
+        const dias=l.dias!==null&&l.dias!==undefined?l.dias+"d":"—";
+        const precio = getPrecioLic(l.tipo);
+        const isUrg = est==="VENCIDA"||est==="CRÍTICA";
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd);flex-wrap:wrap;">' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-family:var(--font-mono);font-size:9px;color:var(--wx);">' + (l.ns||"—") + '</div>' +
+            '<div style="font-size:11px;color:var(--wm);">' + (l.tipo||"").split(" - ")[0] + '</div>' +
+            (precio && isUrg ? '<div style="font-size:10px;color:#F5C842;font-weight:600;margin-top:1px;">💰 Oportunidad: ' + fmtUSD(precio) + '</div>' : '') +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0;">' +
+            '<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+estBg[est]+';color:'+col+';">'+est+'</span>' +
+            '<div style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:'+col+';margin-top:2px;">'+dias+'</div>' +
+            '<div style="font-size:9px;color:var(--ws);">'+fv+'</div>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+
+      return '<div style="margin-bottom:6px;border:1px solid '+(ov+oc>0?"#E0525244":"var(--bd)")+';border-radius:8px;overflow:hidden;">' +
+        '<div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;background:var(--bs);">' +
+          '<div>' +
+            '<div style="font-size:12px;font-weight:600;color:var(--w);">'+orgNombre+'</div>' +
+            '<div style="font-size:10px;color:var(--ws);">'+olics.length+' licencia'+(olics.length>1?'s':'') + (orgOpp>0?' · <span style="color:#F5C842;font-weight:700;">💰 '+fmtUSD(orgOpp)+'</span>':'') +'</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;align-items:center;">' +
+            (ov>0?'<span style="font-size:10px;font-weight:700;color:#E05252;">'+ov+' venc.</span>':'') +
+            (oc>0?'<span style="font-size:10px;font-weight:700;color:#E05252;">'+oc+' crít.</span>':'') +
+            '<span style="color:var(--ws);font-size:12px;">▼</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:none;padding:8px 12px;background:var(--bb);">'+licRows+'</div>' +
+      '</div>';
+    }).join("");
+
+    return '<div style="margin-bottom:10px;border:1px solid '+(sv+sc>0?"#E0525244":"var(--bd)")+';border-radius:var(--r12);overflow:hidden;">' +
+      '<div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;background:var(--bs);">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<div style="width:4px;height:24px;background:'+urgColor+';border-radius:2px;"></div>' +
+          '<div>' +
+            '<div style="font-family:var(--font-title);font-size:14px;font-weight:700;color:var(--w);">'+suc+'</div>' +
+            '<div style="font-size:10px;color:var(--ws);margin-top:2px;">'+slics.length+' licencias · '+Object.keys(byOrg).length+' organizaciones' + (oppTotal>0?' · <span style="color:#F5C842;font-weight:700;">💰 '+fmtUSD(oppTotal)+'</span>':'') +'</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+          (sv>0?'<span style="font-size:11px;font-weight:700;color:#E05252;background:#1A0A0A;padding:2px 8px;border-radius:20px;">'+sv+' venc.</span>':'') +
+          (sc>0?'<span style="font-size:11px;font-weight:700;color:#E05252;background:#1A0A0A;padding:2px 8px;border-radius:20px;">'+sc+' crít.</span>':'') +
+          (sp>0?'<span style="font-size:11px;font-weight:700;color:#F5C842;background:#1A1500;padding:2px 8px;border-radius:20px;">'+sp+' próx.</span>':'') +
+          '<span style="color:var(--ws);font-size:14px;">▼</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:none;padding:12px 14px;background:var(--bb);">'+orgRows+'</div>' +
+    '</div>';
+  }).join("");
+
+  return stats +
+    '<div style="font-size:10px;color:var(--ws);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Por sucursal · clic para ver organizaciones</div>' +
+    grupos;
+}
+
+function renderOrgs(sucNombre){
+  const {sucursales} = DATA;
+  const activeSuc = sucNombre || sucursales[0]?.nombre;
+  const orgs = DATA.orgsPorSuc[activeSuc]||[];
+  const lics = DATA.licPorSuc[activeSuc]||[];
+  const licByOrg = {};
+  lics.forEach(l=>{ if(!licByOrg[l.org_id]) licByOrg[l.org_id]=[]; licByOrg[l.org_id].push(l); });
+  const sorted = [...orgs].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const unassigned = DATA.unassignedOrgs || [];
+  const pendingCount = Object.keys(pendingAssignments).length;
+
+  const html = `
+  <div style="padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div class="orgs-title">Organizaciones</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button onclick="goLicencias()" style="background:var(--bs);border:1px solid var(--bd);color:var(--y);border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">📋 Licencias globales</button>
+        ${unassigned.length>0?'<button onclick="toggleUnassigned()" id="btn-unassigned" style="background:#1A0A1A;border:1px solid #E0525244;color:#E05252;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">⚠ Sin sucursal ('+unassigned.length+')</button>':""}
+        ${pendingCount>0?'<button onclick="exportAssignments()" style="background:var(--gdk);border:1px solid var(--gd);color:var(--g);border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">⬇ Exportar ('+pendingCount+')</button>':""}
+      </div>
+    </div>
+
+    <!-- Panel sin sucursal -->
+    <div id="panel-unassigned" style="display:none;margin-bottom:16px;">
+      <div style="background:#1A0A0A;border:1px solid #E0525244;border-radius:12px;overflow:hidden;">
+        <div style="padding:12px 14px;border-bottom:1px solid #3A1010;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;font-weight:700;color:#E05252;">Sin sucursal asignada</span>
+          <span style="font-size:10px;color:#888;">${unassigned.length} orgs</span>
+        </div>
+        <div style="max-height:400px;overflow-y:auto;">
+          ${unassigned.length===0
+            ? '<div style="padding:20px;text-align:center;color:#888;font-size:12px;">✓ Todas asignadas</div>'
+            : unassigned.map((org,i)=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2A1010;flex-wrap:wrap;" id="unasgn-${i}">
+              <div style="flex:1;min-width:120px;">
+                <div style="font-size:12px;font-weight:600;color:#fff;">${org.nombre}</div>
+                <div style="font-size:10px;color:#888;">${org.ciudad||"—"} · ID: ${org.id}</div>
+              </div>
+              <select onchange="assignOrg('${org.id}','${org.nombre.replace(/'/g,"\\'")}','${org.ciudad||""}',this.value,${i})"
+                style="background:#111;border:1px solid #333;color:#fff;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;min-width:140px;" id="sel-${i}">
+                <option value="">— Elegir sucursal —</option>
+                ${sucursales.map((s,idx)=>`<option value="${s.nombre}" ${pendingAssignments[org.id]?.sucursal===s.nombre?"selected":""}>${s.nombre}</option>`).join("")}
+              </select>
+              ${pendingAssignments[org.id] ? `<span style="font-size:10px;color:#6EE26E;font-weight:600;">✓ ${pendingAssignments[org.id].sucursal}</span>` : ""}
+            </div>`).join("")
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Selector de sucursal -->
+    <div class="suc-selector">${sucursales.map((s,idx)=>'<button class="suc-sel-btn '+(s.nombre===activeSuc?"active":"") +'" onclick="renderOrgs(DATA.sucursales['+idx+'].nombre)">'+s.nombre+'</button>').join("")}</div>
+
+    <!-- Embudo Engagement -->
+    ${buildEngagementFunnel(orgs)}
+
+    <!-- Resumen licencias de la sucursal -->
+    ${lics.length>0 ? '<div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);padding:14px;margin-bottom:14px;">' +
+      '<div style="font-family:var(--font-title);font-size:13px;font-weight:800;margin-bottom:10px;">Licencias · ' + activeSuc + '</div>' +
+      buildLicSummary(lics, true) + '</div>' : ""}
+
+    <!-- Búsqueda + Filtro especial -->
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;">
+      <input class="org-search" type="text" placeholder="🔍 Buscar organización o ciudad..." oninput="filterOrgsGlobal(this.value)" id="org-search-global" style="flex:1;min-width:180px;margin-bottom:0;">
+      <button id="btn-casi-he" onclick="toggleCasiHE()" style="background:var(--bs);border:2px solid var(--y);color:var(--y);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;display:block;">
+        🎯 Oportunidad HEH
+      </button>
+    </div>
+    <div class="org-stats-row">
+      <span class="org-stat"><strong>${orgs.length}</strong> organizaciones</span>
+      <span class="org-stat"><strong>${orgs.reduce((s,o)=>s+o.total,0)}</strong> dispositivos</span>
+      <span class="org-stat"><strong>${lics.length}</strong> licencias</span>
+    </div>
+
+    <!-- Lista orgs normal -->
+    <div class="org-list" id="org-list-global">
+      ${sorted.length===0
+        ? '<div class="empty"><div class="empty-icon">🏢</div>Sin organizaciones registradas</div>'
+        : sorted.map((o,i)=>buildOrgAccordion(o, licByOrg[o.id]||[], i)).join("")}
+    </div>
+
+    <!-- Lista filtrada casi-HE (oculta por defecto) -->
+    <div id="panel-casi-he" style="display:none;">
+      <div style="background:#1A1500;border:1px solid var(--y)44;border-radius:var(--r12);padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-family:var(--font-title);font-size:13px;font-weight:800;color:var(--y);">🎯 Oportunidad HEH · Ha en Profundidad sin VCA suficiente</span>
+          <button onclick="toggleCasiHE()" style="background:none;border:none;color:var(--ws);font-size:18px;cursor:pointer;">✕</button>
+        </div>
+        <div style="font-size:10px;color:var(--ws);">Orgs con Engaged Acre Breadth > 0 y VCA R12 &lt; 4 · ordenadas por ha Breadth de mayor a menor</div>
+      </div>
+      <div id="list-casi-he" class="org-list"></div>
+    </div>
+    <div style="height:24px;"></div>
+  </div>`;
+
+  document.getElementById("screen-orgs").innerHTML = html;
+}
+
+function toggleUnassigned(){
+  const panel = document.getElementById("panel-unassigned");
+  if(panel) panel.style.display = panel.style.display==="none" ? "block" : "none";
+}
+
+function assignOrg(orgId, nombre, ciudad, sucursal, idx){
+  if(!sucursal) { delete pendingAssignments[orgId]; }
+  else { pendingAssignments[orgId] = { id:orgId, nombre, ciudad, sucursal }; }
+  // Actualizar badge visualmente sin re-render completo
+  const row = document.getElementById("unasgn-"+idx);
+  if(row){
+    const badge = row.querySelector(".asgn-badge");
+    if(sucursal){
+      if(badge) badge.textContent="✓ "+sucursal;
+      else row.insertAdjacentHTML("beforeend",`<span class="asgn-badge" style="font-size:10px;color:#6EE26E;font-weight:600;">✓ ${sucursal}</span>`);
+    } else {
+      if(badge) badge.remove();
+    }
+  }
+  // Actualizar contador botón exportar
+  const count = Object.keys(pendingAssignments).length;
+  const btn = document.querySelector("[onclick='exportAssignments()']");
+  if(btn) btn.textContent = `⬇ Exportar asignaciones (${count})`;
+  else if(count>0){
+    const header = document.querySelector("#panel-unassigned").previousElementSibling;
+    if(header) header.insertAdjacentHTML("beforeend",`<button onclick="exportAssignments()"
+      style="background:#0A1A0A;border:1px solid #2D7A2D;color:#6EE26E;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;">
+      ⬇ Exportar asignaciones (${count})</button>`);
+  }
+}
+
+function exportAssignments(){
+  const rows = [["ID Organización","Nombre Organización","Ciudad","Sucursal Asignada"]];
+  Object.values(pendingAssignments).forEach(a=>{
+    rows.push([a.id, a.nombre, a.ciudad||"", a.sucursal]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:16},{wch:35},{wch:20},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Asignaciones");
+  const fecha = new Date().toLocaleDateString("es-AR").replace(/\//g,"-");
+  XLSX.writeFile(wb, `ISG_Asignaciones_Sucursal_${fecha}.xlsx`);
+}
+
+function toggleCasiHE(){
+  const panel = document.getElementById("panel-casi-he");
+  const listNormal = document.getElementById("org-list-global");
+  const btn = document.getElementById("btn-casi-he");
+  if(!panel) return;
+
+  const isOpen = panel.style.display !== "none";
+  if(isOpen){
+    panel.style.display = "none";
+    listNormal.style.display = "";
+    if(btn){ btn.style.background="var(--bs)"; btn.style.color="var(--y)"; }
+    return;
+  }
+
+  // Construir lista filtrada
+  const cde = DATA.cdeByOrg || {};
+  const orgHa = DATA.orgHa || {};
+  const lics = DATA.licPorSuc;
+
+  // Obtener todas las orgs de la sucursal activa
+  // Buscar el selector activo
+  const activeSucBtn = document.querySelector(".suc-sel-btn.active");
+  const activeSuc = activeSucBtn ? activeSucBtn.textContent.trim() : DATA.sucursales[0]?.nombre;
+  const orgs = DATA.orgsPorSuc[activeSuc] || [];
+  const licByOrg = {};
+  (DATA.licPorSuc[activeSuc]||[]).forEach(l=>{ if(!licByOrg[l.org_id]) licByOrg[l.org_id]=[]; licByOrg[l.org_id].push(l); });
+
+  // Filtrar: Engaged Acre Breadth > 0 y VCA R12 < 4
+  const casiHE = orgs.filter(o=>{
+    const d = cde[String(o.id)];
+    if(!d) return false;
+    return (d.breadth_ha||0) > 0 && d.prom_r12 < 4;
+  }).sort((a,b)=>{
+    const bA = (cde[String(a.id)]?.breadth_ha)||0;
+    const bB = (cde[String(b.id)]?.breadth_ha)||0;
+    return bB - bA;
+  });
+
+  const listEl = document.getElementById("list-casi-he");
+  if(listEl){
+    if(casiHE.length===0){
+      listEl.innerHTML = '<div class="empty"><div class="empty-icon">✓</div>No hay organizaciones en esta categoría</div>';
+    } else {
+      listEl.innerHTML = casiHE.map((o,i)=>{
+        const ha = orgHa[String(o.id)];
+        const d = cde[String(o.id)];
+        const vcaFaltantes = d ? Math.max(0, 4-d.prom_r12) : 4;
+        const breadthHa = d?.breadth_ha || 0;
+        const depthHa = d?.depth_ha || 0;
+        const badge = '<div style="display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;">' +
+          '<span style="font-size:10px;font-weight:700;background:#1A1500;color:var(--y);border:1px solid var(--y)44;border-radius:20px;padding:2px 8px;">📐 '+breadthHa.toLocaleString('es-AR')+' ha Breadth</span>' +
+          (depthHa>0?'<span style="font-size:10px;font-weight:700;background:#0A1A0A;color:#6EE26E;border:1px solid #6EE26E44;border-radius:20px;padding:2px 8px;">⬛ '+depthHa.toLocaleString('es-AR')+' ha Depth</span>':'') +
+          '<span style="font-size:10px;font-weight:700;background:#1A0A0A;color:#E05252;border:1px solid #E0525244;border-radius:20px;padding:2px 8px;">⚡ Faltan '+vcaFaltantes+' VCA</span>' +
+          (d ? '<span style="font-size:10px;color:var(--ws);background:var(--bs);border:1px solid var(--bd);border-radius:20px;padding:2px 8px;">'+d.prom_r12+'/4 VCA R12</span>' : '') +
+        '</div>';
+        return '<div style="margin-bottom:4px;">' + badge + buildOrgAccordion(o, licByOrg[o.id]||[], 9000+i) + '</div>';
+      }).join("");
+    }
+    // Actualizar contador en header
+    const hdr = panel.querySelector("span");
+    if(hdr) hdr.textContent = '🎯 Oportunidad HEH · Ha en Profundidad sin VCA suficiente (' + casiHE.length + ' orgs)';
+  }
+
+  panel.style.display = "block";
+  listNormal.style.display = "none";
+  if(btn){ btn.style.background="var(--y)"; btn.style.color="#111"; }
+}
+
+function filterOrgsGlobal(q){
+  const items = document.querySelectorAll("#org-list-global .org-accordion");
+  let visible=0;
+  items.forEach(item=>{
+    const match = item.dataset.nombre.includes(q.toLowerCase()) || item.dataset.ciudad.includes(q.toLowerCase());
+    item.style.display = match?"":"none";
+    if(match) visible++;
+  });
+}
+
+function openReasignar(orgId, orgNombre, idx){
+  // Remover modal previo si existe
+  const prev = document.getElementById("modal-reasignar");
+  if(prev) prev.remove();
+
+  const sucursales = DATA.sucursales;
+  const current = pendingAssignments[orgId]?.sucursal || "";
+
+  const modal = document.createElement("div");
+  modal.id = "modal-reasignar";
+  modal.style.cssText = "position:fixed;inset:0;background:#000000CC;z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;";
+  modal.innerHTML =
+    '<div style="background:#1E1E1E;border:1px solid var(--bd);border-radius:14px;padding:24px;width:100%;max-width:400px;border-top:3px solid var(--y);">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+        '<div>' +
+          '<div style="font-family:var(--font-title);font-size:15px;font-weight:800;">Reasignar Sucursal</div>' +
+          '<div style="font-size:11px;color:var(--ws);margin-top:2px);">' + orgNombre + '</div>' +
+        '</div>' +
+        '<button onclick="document.getElementById(\'modal-reasignar\').remove()" style="background:none;border:none;color:var(--ws);font-size:22px;cursor:pointer;">✕</button>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--ws);margin-bottom:8px;">Seleccioná la nueva sucursal:</div>' +
+      '<select id="sel-reasignar" style="background:var(--bb);border:1px solid var(--bd);color:var(--w);border-radius:8px;padding:10px 14px;width:100%;font-size:13px;outline:none;margin-bottom:16px;">' +
+        '<option value="">— Elegir sucursal —</option>' +
+        sucursales.map((s,i) =>
+          '<option value="' + s.nombre + '" ' + (s.nombre===current?"selected":"") + '>' + s.nombre + '</option>'
+        ).join("") +
+      '</select>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+        '<button onclick="document.getElementById(\'modal-reasignar\').remove()" style="background:none;border:1px solid var(--bd);color:var(--ws);border-radius:8px;padding:9px 20px;font-size:13px;cursor:pointer;">Cancelar</button>' +
+        '<button onclick="confirmarReasignar(\'' + orgId + '\',\'' + orgNombre.replace(/'/g,"\\'") + '\')" style="background:var(--g);border:none;color:#fff;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;">Guardar</button>' +
+      '</div>' +
+    '</div>';
+
+  modal.addEventListener("click", e => { if(e.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function confirmarReasignar(orgId, orgNombre){
+  const sel = document.getElementById("sel-reasignar");
+  if(!sel || !sel.value) return;
+  const sucursal = sel.value;
+
+  pendingAssignments[orgId] = { id:orgId, nombre:orgNombre, ciudad:"", sucursal };
+
+  // Cerrar modal
+  document.getElementById("modal-reasignar")?.remove();
+
+  // Mostrar feedback en el botón correspondiente
+  const btns = document.querySelectorAll(`[onclick*="openReasignar('${orgId}'"]`);
+  btns.forEach(btn => {
+    btn.textContent = "✓ " + sucursal;
+    btn.style.color = "#6EE26E";
+    btn.style.borderColor = "#6EE26E44";
+  });
+
+  // Actualizar botón exportar
+  const count = Object.keys(pendingAssignments).length;
+  const exportBtn = document.querySelector("[onclick='exportAssignments()']");
+  if(exportBtn){
+    exportBtn.textContent = "⬇ Exportar reasignaciones (" + count + ")";
+  } else {
+    // Agregar botón exportar si no existe
+    const header = document.querySelector("#screen-orgs .orgs-title")?.closest("div");
+    if(header){
+      const newBtn = document.createElement("button");
+      newBtn.onclick = exportAssignments;
+      newBtn.setAttribute("onclick","exportAssignments()");
+      newBtn.style.cssText = "background:var(--gdk);border:1px solid var(--gd);color:var(--g);border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;";
+      newBtn.textContent = "⬇ Exportar reasignaciones (" + count + ")";
+      header.appendChild(newBtn);
+    }
+  }
+}
+
+function toggleOrg(idx){
+  const el = document.getElementById("org-acc-"+idx);
+  if(el) el.classList.toggle("open");
+}
+
+// ── DESCARGA EXCEL POR SUCURSAL ───────────────────────────────────────────────
+function downloadSucursal(id){
+  const suc = DATA.sucursales.find(s=>s.id===id);
+  if(!suc) return;
+
+  const trim = DATA.trim;
+  const orgs = DATA.orgsPorSuc[suc.nombre]||[];
+  const lics = DATA.licPorSuc[suc.nombre]||[];
+  const wb = XLSX.utils.book_new();
+
+  // ── HOJA 1: INDICADORES ──────────────────────────────────────────────────────
+  const kpis = [
+    ["KPI","Grupo","Valor","Objetivo "+trim,"Brecha","Estado"],
+    ["Ha Oportunidad","Adoption",suc.ha_opp,"—","—","—"],
+    ["Ha Conectadas (ha)","Adoption",suc.ha_conn,"—","—","—"],
+    ["% Ha Conectadas","Adoption",suc.pct_conn,suc.obj_conn,
+      suc.pct_conn!==null&&suc.obj_conn ? (suc.pct_conn-suc.obj_conn).toFixed(1) : "—",
+      suc.pct_conn!==null&&suc.obj_conn ? (suc.pct_conn>=suc.obj_conn?"✓ En objetivo":suc.pct_conn>=suc.obj_conn*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["Ha Alt. Conectadas (ha)","Adoption",suc.ha_heh,"—","—","—"],
+    ["% Ha Alt. Conectadas","Adoption",suc.pct_heh,suc.obj_heh,
+      suc.pct_heh!==null&&suc.obj_heh ? (suc.pct_heh-suc.obj_heh).toFixed(1) : "—",
+      suc.pct_heh!==null&&suc.obj_heh ? (suc.pct_heh>=suc.obj_heh?"✓ En objetivo":suc.pct_heh>=suc.obj_heh*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% Tec. Cosecha","Adoption",suc.pct_cosecha,suc.obj_cosecha,
+      suc.pct_cosecha!==null&&suc.obj_cosecha ? (suc.pct_cosecha-suc.obj_cosecha).toFixed(1) : "—",
+      suc.pct_cosecha!==null&&suc.obj_cosecha ? (suc.pct_cosecha>=suc.obj_cosecha?"✓ En objetivo":suc.pct_cosecha>=suc.obj_cosecha*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% Spray Tech","Adoption",suc.pct_spray,suc.obj_spray,
+      suc.pct_spray!==null&&suc.obj_spray ? (suc.pct_spray-suc.obj_spray).toFixed(1) : "—",
+      suc.pct_spray!==null&&suc.obj_spray ? (suc.pct_spray>=suc.obj_spray?"✓ En objetivo":suc.pct_spray>=suc.obj_spray*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% SIA","Utilization",suc.pct_sia,suc.obj_sia,
+      suc.pct_sia!==null&&suc.obj_sia ? (suc.pct_sia-suc.obj_sia).toFixed(1) : "—",
+      suc.pct_sia!==null&&suc.obj_sia ? (suc.pct_sia>=suc.obj_sia?"✓ En objetivo":suc.pct_sia>=suc.obj_sia*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% INC PRO","Utilization",suc.pct_incpro,suc.obj_incpro,
+      suc.pct_incpro!==null&&suc.obj_incpro ? (suc.pct_incpro-suc.obj_incpro).toFixed(1) : "—",
+      suc.pct_incpro!==null&&suc.obj_incpro ? (suc.pct_incpro>=suc.obj_incpro?"✓ En objetivo":suc.pct_incpro>=suc.obj_incpro*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% EA","Utilization",suc.pct_ea,suc.obj_ea,
+      suc.pct_ea!==null&&suc.obj_ea ? (suc.pct_ea-suc.obj_ea).toFixed(1) : "—",
+      suc.pct_ea!==null&&suc.obj_ea ? (suc.pct_ea>=suc.obj_ea?"✓ En objetivo":suc.pct_ea>=suc.obj_ea*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% Section Control","Utilization",suc.pct_sc,suc.obj_sc,
+      suc.pct_sc!==null&&suc.obj_sc ? (suc.pct_sc-suc.obj_sc).toFixed(1) : "—",
+      suc.pct_sc!==null&&suc.obj_sc ? (suc.pct_sc>=suc.obj_sc?"✓ En objetivo":suc.pct_sc>=suc.obj_sc*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+    ["% AutoTrac","Utilization",suc.pct_autotrac,suc.obj_autotrac,
+      suc.pct_autotrac!==null&&suc.obj_autotrac ? (suc.pct_autotrac-suc.obj_autotrac).toFixed(1) : "—",
+      suc.pct_autotrac!==null&&suc.obj_autotrac ? (suc.pct_autotrac>=suc.obj_autotrac?"✓ En objetivo":suc.pct_autotrac>=suc.obj_autotrac*0.85?"~ Cerca":"✗ Bajo obj.") : "—"],
+  ];
+  const ws1 = XLSX.utils.aoa_to_sheet(kpis);
+  ws1['!cols'] = [{wch:28},{wch:12},{wch:14},{wch:14},{wch:10},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws1, "Indicadores");
+
+  // ── HOJA 2: ORGANIZACIONES ───────────────────────────────────────────────────
+  const orgHeaders = [
+    "ID Org","Nombre","Ciudad",
+    "Monitores","Receptores","Modems","Modems Activos","Total Disp.",
+    "Engagement Level","Prom R12 VCA","Ha en Riesgo",
+    "Setup File","Work Plan","Field/Bound.","Equip. Monitor.","Work Details","Reports",
+    "WP Created R12","WP Completed R12","Files Uploaded",
+    "Campos s/Límite","s/AutoLímite","c/Límite Activo"
+  ];
+  const orgRows = [orgHeaders];
+  orgs.forEach(org => {
+    const cde = DATA.cdeByOrg ? DATA.cdeByOrg[String(org.id)] : null;
+    orgRows.push([
+      org.id, org.nombre, org.ciudad||"",
+      org.monitores, org.receptores, org.modems, org.modems_activos||0, org.total,
+      cde ? cde.eng_level : "—",
+      cde ? cde.prom_r12 : "—",
+      cde ? cde.risk_ha : "—",
+      cde ? cde.vca_setup : "—",
+      cde ? cde.vca_workplan : "—",
+      cde ? cde.vca_field : "—",
+      cde ? cde.vca_equip : "—",
+      cde ? cde.vca_work : "—",
+      cde ? cde.vca_reports : "—",
+      cde ? cde.vca_wp_created : "—",
+      cde ? cde.vca_wp_completed : "—",
+      cde ? cde.vca_files : "—",
+      cde ? cde.vca_no_boundary : "—",
+      cde ? cde.vca_no_auto_bnd : "—",
+      cde ? cde.vca_active_bnd : "—",
+    ]);
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(orgRows);
+  ws2['!cols'] = [{wch:10},{wch:30},{wch:18},{wch:10},{wch:10},{wch:8},{wch:14},{wch:10},
+                  {wch:24},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12},{wch:14},{wch:13},{wch:10},
+                  {wch:14},{wch:16},{wch:14},{wch:14},{wch:13},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws2, "Organizaciones");
+
+  // ── HOJA 3: LICENCIAS ────────────────────────────────────────────────────────
+  const licHeaders = ["Nro. Serie","Organización","Tipo Licencia","Fecha Vencimiento","Días para Vencer","Estado","Acción"];
+  const licRows = [licHeaders];
+  [...lics].sort((a,b)=>(a.dias||9999)-(b.dias||9999)).forEach(l => {
+    const fv = l.fecha_venc ? (l.fecha_venc instanceof Date ? l.fecha_venc.toLocaleDateString("es-AR") : String(l.fecha_venc).slice(0,10)) : "—";
+    licRows.push([l.ns||"", l.org_nombre||"", (l.tipo||"").split(" - ")[0], fv, l.dias||"", l.estado||"", l.accion||""]);
+  });
+  const ws3 = XLSX.utils.aoa_to_sheet(licRows);
+  ws3['!cols'] = [{wch:18},{wch:30},{wch:20},{wch:16},{wch:16},{wch:12},{wch:22}];
+  XLSX.utils.book_append_sheet(wb, ws3, "Licencias");
+
+  // ── DESCARGAR ────────────────────────────────────────────────────────────────
+  const fecha = new Date().toLocaleDateString("es-AR").replace(/\//g,"-");
+  XLSX.writeFile(wb, `ISG_${suc.nombre.replace(/[\s.]/g,"_")}_${trim}_${fecha}.xlsx`);
+}
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
+function openSuc(id){
+  currentTab = "indicadores";
+  renderSuc(id);
+  document.getElementById("screen-home").classList.remove("active");
+  document.getElementById("screen-suc").classList.add("active");
+  document.getElementById("back-btn").classList.add("visible");
+  window.scrollTo(0,0);
+}
+
+function goHome(){
+  document.getElementById("screen-suc").classList.remove("active");
+  document.getElementById("screen-orgs").classList.remove("active");
+  document.getElementById("screen-lic").classList.remove("active");
+  document.getElementById("screen-opp").classList.remove("active");
+  document.getElementById("screen-home").classList.add("active");
+  document.getElementById("back-btn").classList.remove("visible");
+  window.scrollTo(0,0);
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+  event.target.classList.add("active");
+  document.getElementById("tab-"+tab).classList.add("active");
+}
+
+function buildHomeLicSummary(){
+  const allLics = Object.values(DATA.licPorSuc||{}).flat();
+  if(allLics.length===0) return "";
+  const v=allLics.filter(l=>l.estado==="VENCIDA").length;
+  const c=allLics.filter(l=>l.estado==="CRÍTICA").length;
+  const p=allLics.filter(l=>l.estado==="PRÓXIMA").length;
+  const a=allLics.filter(l=>l.estado==="ACTIVA").length;
+
+  // Vencidas por sucursal
+  const bySuc = {};
+  allLics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA").forEach(l=>{
+    const s = l.sucursal||"Sin asignar";
+    if(!bySuc[s]) bySuc[s]=0;
+    bySuc[s]++;
+  });
+  const sucRows = Object.entries(bySuc).sort((a,b)=>b[1]-a[1]).map(([suc,n])=>
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);">' +
+      '<span style="font-size:11px;color:var(--wm);">'+suc+'</span>' +
+      '<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:#E05252;">'+n+'</span>' +
+    '</div>'
+  ).join("");
+
+  const cards = [["VENCIDAS",v,"#E05252","#1A0A0A"],["CRÍTICAS",c,"#E05252","#1A0A0A"],["PRÓXIMAS",p,"#F5C842","#1A1500"],["ACTIVAS",a,"#6EE26E","#0A1A0A"]]
+    .map(([lbl,n,col,bg]) =>
+      '<div style="background:'+bg+';border:1px solid '+col+'33;border-radius:8px;padding:10px;text-align:center;">' +
+        '<div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:'+col+';">'+n+'</div>' +
+        '<div style="font-size:9px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">'+lbl+'</div>' +
+      '</div>'
+    ).join("");
+
+  return '<div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);padding:14px;margin-bottom:20px;border-top:3px solid var(--y);">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+      '<span style="font-family:var(--font-title);font-size:13px;font-weight:800;">Licencias · Resumen Global</span>' +
+      '<button onclick="goLicencias()" style="background:none;border:1px solid var(--y);color:var(--y);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">Ver detalle →</button>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:' + (Object.keys(bySuc).length>0?'12px':'0') + ';">' + cards + '</div>' +
+    (Object.keys(bySuc).length>0 ?
+      '<div style="font-size:10px;color:var(--ws);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Vencidas/Críticas por sucursal</div>' + sucRows
+      : '') +
+  '</div>';
+}
+
+function renderLicencias(filterTipo){
+  const allLics = Object.values(DATA.licPorSuc||{}).flat();
+  const sorted = [...allLics].sort((a,b)=>(a.dias||9999)-(b.dias||9999));
+
+  // Tipos únicos
+  const tipos = [...new Set(sorted.map(l=>(l.tipo||"").split(" - ")[0].trim()).filter(Boolean))].sort();
+  const active = filterTipo || "TODOS";
+  const filtered = active==="TODOS" ? sorted : sorted.filter(l=>(l.tipo||"").split(" - ")[0].trim()===active);
+
+  const filterBtns = ["TODOS",...tipos].map(t=>{
+    const isActive = t===active;
+    const count = t==="TODOS" ? sorted.length : sorted.filter(l=>(l.tipo||"").split(" - ")[0].trim()===t).length;
+    return '<button onclick="renderLicencias(\'' + t.replace(/'/g,"\\'") + '\')" style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;' +
+      (isActive
+        ? 'background:var(--y);border:none;color:#111;'
+        : 'background:var(--bs);border:1px solid var(--bd);color:var(--ws);') +
+      '">' + t + ' <span style="opacity:0.7;">(' + count + ')</span></button>';
+  }).join("");
+
+  const html = `
+  <div style="padding:16px;">
+    <div style="margin-bottom:14px;">
+      <div class="orgs-title" style="font-size:22px;">Licencias · Global</div>
+      <div style="font-size:11px;color:var(--ws);margin-top:4px;">${sorted.length} totales · mostrando ${filtered.length}</div>
+    </div>
+    <!-- Filtros por tipo — ARRIBA -->
+    <div style="display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px;padding-bottom:4px;">
+      ${filterBtns}
+    </div>
+    <!-- Resumen + lista -->
+    ${buildLicSummary(filtered, false)}
+    <div style="height:24px;"></div>
+  </div>`;
+
+  const el = document.getElementById("screen-lic");
+  if(el) el.innerHTML = html;
+}
+
+function goOportunidades(){
+  renderOportunidades();
+  document.getElementById("screen-home").classList.remove("active");
+  document.getElementById("screen-suc").classList.remove("active");
+  document.getElementById("screen-orgs").classList.remove("active");
+  document.getElementById("screen-lic").classList.remove("active");
+  document.getElementById("screen-opp").classList.add("active");
+  document.getElementById("back-btn").classList.add("visible");
+  window.scrollTo(0,0);
+}
+
+function renderOportunidades(){
+  const cde = DATA.cdeByOrg||{};
+  const orgHa = DATA.orgHa||{};
+  const licPorOrg = {};
+  Object.values(DATA.licPorSuc||{}).flat().forEach(l=>{
+    if(!licPorOrg[l.org_id]) licPorOrg[l.org_id]=[];
+    licPorOrg[l.org_id].push(l);
+  });
+
+  // ── Calcular todos los datasets ──────────────────────────────────────────────
+
+  // 1. Top oportunidades HEH
+  const topHEH = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc,orgs])=>{
+    orgs.forEach(o=>{
+      const d = cde[String(o.id)];
+      const ha = orgHa[String(o.id)];
+      if(!d||!ha) return;
+      const breadth = d.breadth_ha||0;
+      const vcaFalt = Math.max(0,4-d.prom_r12);
+      if(breadth>0&&vcaFalt>0) topHEH.push({suc,nombre:o.nombre,ciudad:o.ciudad,breadth,vca:d.prom_r12,vcaFalt,eng:d.eng_level});
+    });
+  });
+  topHEH.sort((a,b)=>b.breadth-a.breadth);
+
+  // 2. Ha en riesgo
+  const haRiesgo = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc,orgs])=>{
+    orgs.forEach(o=>{
+      const ha = orgHa[String(o.id)];
+      if(ha&&ha.ha_riesgo>0) haRiesgo.push({suc,nombre:o.nombre,ha_riesgo:ha.ha_riesgo,ha_conn:ha.ha_conn});
+    });
+  });
+  haRiesgo.sort((a,b)=>b.ha_riesgo-a.ha_riesgo);
+
+  // 3. Sin ha con dispositivos
+  const sinHa = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc,orgs])=>{
+    orgs.forEach(o=>{
+      const ha = orgHa[String(o.id)];
+      if(ha&&ha.ha_conn===0&&(o.monitores+o.receptores+o.modems)>0)
+        sinHa.push({suc,nombre:o.nombre,ciudad:o.ciudad,monitores:o.monitores,receptores:o.receptores,modems:o.modems});
+    });
+  });
+  sinHa.sort((a,b)=>(b.modems+b.monitores+b.receptores)-(a.modems+a.monitores+a.receptores));
+
+  // 4. Brecha labores
+  const brechaLab = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc,orgs])=>{
+    orgs.forEach(o=>{
+      const ha = orgHa[String(o.id)];
+      if(!ha) return;
+      const labs = [ha.ha_siembra||0,ha.ha_prep||0,ha.ha_pulv||0,ha.ha_cosecha||0];
+      const max = Math.max(...labs);
+      const min = Math.min(...labs.filter(v=>v>0));
+      const brecha = max-(isFinite(min)?min:0);
+      if(brecha>500&&max>0) brechaLab.push({suc,nombre:o.nombre,ha_siembra:ha.ha_siembra||0,ha_prep:ha.ha_prep||0,ha_pulv:ha.ha_pulv||0,ha_cosecha:ha.ha_cosecha||0,max,brecha});
+    });
+  });
+  brechaLab.sort((a,b)=>b.brecha-a.brecha);
+
+  // 5. Cruce triple
+  const cruceTriple = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc,orgs])=>{
+    orgs.forEach(o=>{
+      const d = cde[String(o.id)];
+      if(!d) return;
+      const breadth = d.breadth_ha||0;
+      const vcaFalt = Math.max(0,4-d.prom_r12);
+      const lics = licPorOrg[String(o.id)]||[];
+      const licUrg = lics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA"||l.estado==="PRÓXIMA");
+      const engBajo = d.eng_level==="R12 Digitally Engaged"||d.eng_level==="Land & Digital";
+      if(breadth>0&&vcaFalt>0&&licUrg.length>0&&engBajo){
+        const oppLic = licUrg.reduce((s,l)=>s+(getPrecioLic(l.tipo)||0),0);
+        cruceTriple.push({suc,nombre:o.nombre,breadth,vcaFalt,vca:d.prom_r12,eng:d.eng_level,licUrg:licUrg.length,oppLic});
+      }
+    });
+  });
+  cruceTriple.sort((a,b)=>b.breadth-a.breadth);
+
+  const ENG_COL={"Highly Engaged":"#6EE26E","Highly Engaged Retained":"#F5C842","R12 Digitally Engaged":"#7DC6FF","Land & Digital":"#D4A0FF"};
+
+  const html = `
+  <div style="padding:16px;">
+    <div style="margin-bottom:20px;">
+      <div style="font-family:var(--font-title);font-size:24px;font-weight:800;letter-spacing:-0.02em;">🎯 Dashboard de Oportunidades</div>
+      <div style="font-size:11px;color:var(--ws);margin-top:4px;">Análisis completo de oportunidades ISG · ${DATA.config?.Semana_Actual||""}</div>
+    </div>
+
+    <!-- Resumen global -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;grid-column:1/-1;">
+        ${[
+          ["🏆",topHEH.length,"Con oportunidad HEH","#F5C842","#1A1200"],
+          ["🔴",haRiesgo.length,"Con ha en riesgo","#E05252","#1A0A0A"],
+          ["⚠️",sinHa.length,"Sin ha + con equipos","#F5C842","#1A1200"],
+          ["🎯",cruceTriple.length,"Cruce triple","#7DC6FF","#0A101A"],
+        ].map(([icon,n,lbl,col,bg])=>`
+        <div style="background:${bg};border:1px solid ${col}33;border-radius:var(--r12);padding:14px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">${icon}</div>
+          <div style="font-family:var(--font-mono);font-size:28px;font-weight:700;color:${col};">${n}</div>
+          <div style="font-size:10px;color:var(--ws);margin-top:4px;">${lbl}</div>
+        </div>`).join("")}
+      </div>
+    </div>
+
+    <!-- 1. Top oportunidades HEH -->
+    <div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);margin-bottom:16px;overflow:hidden;border-top:3px solid var(--y);">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-title);font-size:14px;font-weight:800;">🏆 Top Oportunidades HEH</span>
+        <span style="font-size:10px;color:var(--ws);">${topHEH.length} orgs · Ha Breadth + VCA &lt; 4</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr style="background:#111;">
+            <th style="padding:8px 12px;text-align:left;color:var(--ws);font-weight:600;">#</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Organización</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Sucursal</th>
+            <th style="padding:8px;text-align:right;color:var(--y);font-weight:600;">Ha Breadth</th>
+            <th style="padding:8px;text-align:center;color:var(--ws);font-weight:600;">VCA R12</th>
+            <th style="padding:8px;text-align:center;color:#E05252;font-weight:600;">Faltan</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Engagement</th>
+          </tr></thead>
+          <tbody>
+            ${topHEH.slice(0,20).map((r,i)=>`
+            <tr style="border-bottom:1px solid var(--bd);background:${i%2===0?"var(--bs)":"#131313"};">
+              <td style="padding:8px 12px;color:var(--ws);">${i+1}</td>
+              <td style="padding:8px;color:var(--w);font-weight:600;">${r.nombre}</td>
+              <td style="padding:8px;color:var(--ws);">${r.suc}</td>
+              <td style="padding:8px;text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--y);">${r.breadth.toLocaleString('es-AR')}</td>
+              <td style="padding:8px;text-align:center;font-family:var(--font-mono);color:var(--wm);">${r.vca}/4</td>
+              <td style="padding:8px;text-align:center;font-weight:700;color:#E05252;">-${r.vcaFalt}</td>
+              <td style="padding:8px;"><span style="font-size:9px;font-weight:600;color:${ENG_COL[r.eng]||'#888'};">${r.eng}</span></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+        ${topHEH.length>20?`<div style="padding:8px 16px;font-size:10px;color:var(--ws);">Mostrando 20 de ${topHEH.length} organizaciones</div>`:""}
+      </div>
+    </div>
+
+    <!-- 2. Ha en riesgo -->
+    <div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);margin-bottom:16px;overflow:hidden;border-top:3px solid #E05252;">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-title);font-size:14px;font-weight:800;">🔴 Ha en Riesgo</span>
+        <span style="font-size:10px;color:var(--ws);">${haRiesgo.reduce((s,r)=>s+r.ha_riesgo,0).toLocaleString('es-AR')} ha totales en riesgo</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr style="background:#111;">
+            <th style="padding:8px 12px;text-align:left;color:var(--ws);font-weight:600;">#</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Organización</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Sucursal</th>
+            <th style="padding:8px;text-align:right;color:#E05252;font-weight:600;">Ha Riesgo</th>
+            <th style="padding:8px;text-align:right;color:var(--ws);font-weight:600;">Ha Conn.</th>
+            <th style="padding:8px;text-align:center;color:var(--ws);font-weight:600;">% Riesgo</th>
+          </tr></thead>
+          <tbody>
+            ${haRiesgo.slice(0,20).map((r,i)=>{
+              const pct = r.ha_conn>0?Math.round(r.ha_riesgo/r.ha_conn*100):0;
+              return `<tr style="border-bottom:1px solid var(--bd);background:${i%2===0?"var(--bs)":"#131313"};">
+                <td style="padding:8px 12px;color:var(--ws);">${i+1}</td>
+                <td style="padding:8px;color:var(--w);font-weight:600;">${r.nombre}</td>
+                <td style="padding:8px;color:var(--ws);">${r.suc}</td>
+                <td style="padding:8px;text-align:right;font-family:var(--font-mono);font-weight:700;color:#E05252;">${r.ha_riesgo.toLocaleString('es-AR')}</td>
+                <td style="padding:8px;text-align:right;font-family:var(--font-mono);color:var(--wm);">${r.ha_conn.toLocaleString('es-AR')}</td>
+                <td style="padding:8px;text-align:center;font-weight:700;color:${pct>20?"#E05252":"#F5C842"};">${pct}%</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. Sin ha con dispositivos -->
+    <div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);margin-bottom:16px;overflow:hidden;border-top:3px solid var(--y);">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-title);font-size:14px;font-weight:800;">⚠️ Sin Ha + Con Dispositivos</span>
+        <span style="font-size:10px;color:var(--ws);">${sinHa.length} orgs a configurar en Operations Center</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr style="background:#111;">
+            <th style="padding:8px 12px;text-align:left;color:var(--ws);font-weight:600;">#</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Organización</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Sucursal</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Ciudad</th>
+            <th style="padding:8px;text-align:center;color:var(--blue);font-weight:600;">Monitores</th>
+            <th style="padding:8px;text-align:center;color:var(--blue);font-weight:600;">Receptores</th>
+            <th style="padding:8px;text-align:center;color:var(--blue);font-weight:600;">Modems</th>
+          </tr></thead>
+          <tbody>
+            ${sinHa.slice(0,20).map((r,i)=>`
+            <tr style="border-bottom:1px solid var(--bd);background:${i%2===0?"var(--bs)":"#131313"};">
+              <td style="padding:8px 12px;color:var(--ws);">${i+1}</td>
+              <td style="padding:8px;color:var(--w);font-weight:600;">${r.nombre}</td>
+              <td style="padding:8px;color:var(--ws);">${r.suc}</td>
+              <td style="padding:8px;color:var(--ws);">${r.ciudad||"—"}</td>
+              <td style="padding:8px;text-align:center;font-family:var(--font-mono);color:${r.monitores>0?"var(--blue)":"var(--wx)"};">${r.monitores||"—"}</td>
+              <td style="padding:8px;text-align:center;font-family:var(--font-mono);color:${r.receptores>0?"var(--blue)":"var(--wx)"};">${r.receptores||"—"}</td>
+              <td style="padding:8px;text-align:center;font-family:var(--font-mono);color:${r.modems>0?"var(--blue)":"var(--wx)"};">${r.modems||"—"}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+        ${sinHa.length>20?`<div style="padding:8px 16px;font-size:10px;color:var(--ws);">Mostrando 20 de ${sinHa.length} organizaciones</div>`:""}
+      </div>
+    </div>
+
+    <!-- 4. Brecha labores -->
+    <div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);margin-bottom:16px;overflow:hidden;border-top:3px solid #7DC6FF;">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-title);font-size:14px;font-weight:800;">📊 Brecha entre Labores</span>
+        <span style="font-size:10px;color:var(--ws);">${brechaLab.length} orgs con brecha &gt; 500 ha</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr style="background:#111;">
+            <th style="padding:8px 12px;text-align:left;color:var(--ws);font-weight:600;">#</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Organización</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Sucursal</th>
+            <th style="padding:8px;text-align:right;color:#E05252;font-weight:600;">Δ Brecha</th>
+            <th style="padding:8px;text-align:right;color:var(--ws);font-weight:600;">🌱 Siembra</th>
+            <th style="padding:8px;text-align:right;color:var(--ws);font-weight:600;">🚜 Prep.</th>
+            <th style="padding:8px;text-align:right;color:var(--ws);font-weight:600;">💧 Pulv.</th>
+            <th style="padding:8px;text-align:right;color:var(--ws);font-weight:600;">🌾 Cosecha</th>
+          </tr></thead>
+          <tbody>
+            ${brechaLab.map((r,i)=>`
+            <tr style="border-bottom:1px solid var(--bd);background:${i%2===0?"var(--bs)":"#131313"};">
+              <td style="padding:8px 12px;color:var(--ws);">${i+1}</td>
+              <td style="padding:8px;color:var(--w);font-weight:600;">${r.nombre}</td>
+              <td style="padding:8px;color:var(--ws);">${r.suc}</td>
+              <td style="padding:8px;text-align:right;font-family:var(--font-mono);font-weight:700;color:#E05252;">${r.brecha.toLocaleString('es-AR')}</td>
+              ${[r.ha_siembra,r.ha_prep,r.ha_pulv,r.ha_cosecha].map(v=>{
+                const pct = r.max>0?Math.round(v/r.max*100):0;
+                const col = pct>=80?"#6EE26E":pct>=40?"#F5C842":"#E05252";
+                return `<td style="padding:8px;text-align:right;font-family:var(--font-mono);color:${col};">${v.toLocaleString('es-AR')}</td>`;
+              }).join("")}
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5. Cruce triple -->
+    <div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r12);margin-bottom:16px;overflow:hidden;border-top:3px solid var(--blue);">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-title);font-size:14px;font-weight:800;">🎯 Cruce Triple · Máxima Prioridad</span>
+        <span style="font-size:10px;color:var(--ws);">Breadth + Bajo engagement + Licencia urgente</span>
+      </div>
+      ${cruceTriple.length===0?'<div style="padding:20px;text-align:center;color:var(--ws);font-size:12px;">No hay organizaciones con los 3 criterios simultáneos</div>':
+      `<div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr style="background:#111;">
+            <th style="padding:8px 12px;text-align:left;color:var(--ws);font-weight:600;">#</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Organización</th>
+            <th style="padding:8px;text-align:left;color:var(--ws);font-weight:600;">Sucursal</th>
+            <th style="padding:8px;text-align:right;color:var(--y);font-weight:600;">Ha Breadth</th>
+            <th style="padding:8px;text-align:center;color:#E05252;font-weight:600;">VCA Falt.</th>
+            <th style="padding:8px;text-align:center;color:var(--ws);font-weight:600;">Lic. Urg.</th>
+            <th style="padding:8px;text-align:right;color:#F5C842;font-weight:600;">Oport. USD</th>
+          </tr></thead>
+          <tbody>
+            ${cruceTriple.map((r,i)=>`
+            <tr style="border-bottom:1px solid var(--bd);background:${i%2===0?"var(--bs)":"#131313"};">
+              <td style="padding:8px 12px;color:var(--ws);">${i+1}</td>
+              <td style="padding:8px;color:var(--w);font-weight:600;">${r.nombre}</td>
+              <td style="padding:8px;color:var(--ws);">${r.suc}</td>
+              <td style="padding:8px;text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--y);">${r.breadth.toLocaleString('es-AR')}</td>
+              <td style="padding:8px;text-align:center;font-weight:700;color:#E05252;">-${r.vcaFalt}</td>
+              <td style="padding:8px;text-align:center;font-weight:700;color:#E05252;">${r.licUrg}</td>
+              <td style="padding:8px;text-align:right;font-family:var(--font-mono);color:#F5C842;">${r.oppLic>0?fmtUSD(r.oppLic):"—"}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+
+    <div style="height:24px;"></div>
+  </div>`;
+
+  document.getElementById("screen-opp").innerHTML = html;
+}
+
+function goOrgs(){
+  renderOrgs(null);
+  document.getElementById("screen-home").classList.remove("active");
+  document.getElementById("screen-suc").classList.remove("active");
+  document.getElementById("screen-orgs").classList.add("active");
+  document.getElementById("screen-lic").classList.remove("active");
+  document.getElementById("screen-opp").classList.remove("active");
+  document.getElementById("back-btn").classList.add("visible");
+  window.scrollTo(0,0);
+}
+
+function goLicencias(){
+  renderLicencias();
+  document.getElementById("screen-home").classList.remove("active");
+  document.getElementById("screen-suc").classList.remove("active");
+  document.getElementById("screen-orgs").classList.remove("active");
+  document.getElementById("screen-lic").classList.add("active");
+  document.getElementById("back-btn").classList.add("visible");
+  window.scrollTo(0,0);
+}
+// ── CARGA ─────────────────────────────────────────────────────────────────────
+async function loadAndRender(){
+  try {
+    document.getElementById("load-sub").textContent = "Cargando datos...";
+    const resp = await fetch(JSON_URL+"?t="+Date.now());
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    document.getElementById("load-sub").textContent = "Procesando...";
+    DATA = await resp.json();
+    // Asegurar estado inicial correcto
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("screen-home").classList.add("active");
+    document.getElementById("screen-suc").classList.remove("active");
+    document.getElementById("screen-orgs").classList.remove("active");
+    document.getElementById("back-btn").classList.remove("visible");
+    renderHome();
+  } catch(err){
+    document.getElementById("loading").innerHTML = `
+      <div style="text-align:center;padding:32px 24px;">
+        <div style="color:#E05252;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px;">Sin conexión</div>
+        <div style="color:#888;font-size:12px;margin-bottom:24px;">${err.message}</div>
+        <button onclick="document.getElementById('fi').click()" style="background:#2D7A2D;border:none;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">📂 Cargar archivo (JSON o Excel)</button>
+        <input type="file" id="fi" accept=".xlsx" style="display:none;" onchange="loadLocal(event)">
+      </div>`;
+  }
+}
+
+function loadLocal(e){
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  if(file.name.endsWith('.json')){
+    r.onload=ev=>{ try{ DATA=JSON.parse(ev.target.result); showApp(); }catch(err){ alert("Error: "+err.message); } };
+    r.readAsText(file);
+  } else {
+    r.onload=ev=>{ try{ DATA=parseExcel(ev.target.result); showApp(); }catch(err){ alert("Error: "+err.message); } };
+    r.readAsArrayBuffer(file);
+  }
+}
+function showApp(){
+  document.getElementById("loading").style.display="none";
+  document.getElementById("app").style.display="block";
+  document.getElementById("screen-home").classList.add("active");
+  document.getElementById("screen-suc").classList.remove("active");
+  document.getElementById("screen-orgs").classList.remove("active");
+  document.getElementById("back-btn").classList.remove("visible");
+  renderHome();
+}
+
+async function refreshData(){
+  const btn = document.querySelector(".refresh-btn");
+  btn.textContent = "⟳"; btn.style.color = "var(--g)";
+  try {
+    const resp = await fetch(JSON_URL+"?t="+Date.now());
+    if(!resp.ok) throw new Error();
+    DATA = await resp.json();
+    renderHome();
+    if(currentSuc) renderSuc(currentSuc);
+  } catch(e){}
+  btn.textContent = "↻"; btn.style.color = "";
+}
+
+// ── ASISTENTE ISG ─────────────────────────────────────────────────────────────
+function toggleAsistente(){
+  const panel = document.getElementById("asistente-panel");
+  if(!panel) return;
+  const isOpen = panel.style.display !== "none";
+  panel.style.display = isOpen ? "none" : "flex";
+  if(!isOpen) renderAsistenteHome();
+}
+
+function renderAsistenteHome(){
+  const el = document.getElementById("asistente-content");
+  if(!el) return;
+  el.innerHTML = `
+    <div style="font-family:var(--font-title);font-size:16px;font-weight:800;margin-bottom:4px;">🎯 Asistente ISG</div>
+    <div style="font-size:11px;color:var(--ws);margin-bottom:16px;">Seleccioná una consulta para analizar los datos</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${[
+        ["🏆","Top oportunidades por sucursal","score, ha breadth y VCAs faltantes","queryTopOportunidades"],
+        ["📋","Licencias por vencer","agrupadas por sucursal y urgencia","queryLicenciasVencer"],
+        ["⚠️","Sin ha pero con dispositivos","orgs con equipos sin configurar en OC","querySinHaConEquipo"],
+        ["🔴","Ha en riesgo","ordenadas de mayor a menor por organización","queryHaEnRiesgo"],
+        ["🎯","Cruce: breadth + bajo engagement + licencia","triple oportunidad de acción","queryCruceTriple"],
+        ["📊","Brecha entre labores","orgs con gran diferencia entre ha por labor","queryBrechaLabores"],
+      ].map(([icon,titulo,desc,fn])=>`
+      <button onclick="${fn}()" style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r8);padding:12px 14px;text-align:left;cursor:pointer;transition:all 0.15s;display:flex;align-items:flex-start;gap:10px;"
+        onmouseover="this.style.borderColor='var(--y)'" onmouseout="this.style.borderColor='var(--bd)'">
+        <span style="font-size:20px;flex-shrink:0;">${icon}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--w);">${titulo}</div>
+          <div style="font-size:10px;color:var(--ws);margin-top:2px;">${desc}</div>
+        </div>
+        <span style="margin-left:auto;color:var(--ws);font-size:16px;flex-shrink:0;">›</span>
+      </button>`).join("")}
+    </div>`;
+}
+
+function renderAsistenteResult(titulo, html){
+  const el = document.getElementById("asistente-content");
+  if(!el) return;
+  el.innerHTML = `
+    <button onclick="renderAsistenteHome()" style="background:none;border:none;color:var(--ws);font-size:12px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;gap:4px;">← Volver</button>
+    <div style="font-family:var(--font-title);font-size:15px;font-weight:800;margin-bottom:14px;">${titulo}</div>
+    ${html}`;
+}
+
+// ── CONSULTA 1: Top oportunidades por sucursal ────────────────────────────────
+function queryTopOportunidades(){
+  if(!DATA) return;
+  const cde = DATA.cdeByOrg||{};
+  const orgHa = DATA.orgHa||{};
+  const rows = [];
+
+  DATA.sucursales.forEach(suc=>{
+    const orgs = DATA.orgsPorSuc[suc.nombre]||[];
+    orgs.forEach(o=>{
+      const d = cde[String(o.id)];
+      const ha = orgHa[String(o.id)];
+      if(!d || !ha) return;
+      const breadth = d.breadth_ha||0;
+      const vcaFalt = Math.max(0, 4 - d.prom_r12);
+      if(breadth > 0 && vcaFalt > 0){
+        rows.push({suc:suc.nombre, nombre:o.nombre, ciudad:o.ciudad, breadth, vca:d.prom_r12, vcaFalt, eng:d.eng_level});
+      }
+    });
+  });
+  rows.sort((a,b)=>b.breadth-a.breadth);
+
+  const ENG_COL = {"Highly Engaged":"#6EE26E","Highly Engaged Retained":"#F5C842","R12 Digitally Engaged":"#7DC6FF","Land & Digital":"#D4A0FF"};
+  const html = `
+    <div style="font-size:11px;color:var(--ws);margin-bottom:10px;">${rows.length} organizaciones con oportunidad · ordenadas por Ha Breadth</div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;">
+      ${rows.slice(0,30).map((r,i)=>`
+      <div style="background:var(--bs);border-radius:var(--r8);padding:10px 12px;border-left:3px solid ${ENG_COL[r.eng]||'#888'};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+          <div>
+            <span style="font-size:10px;color:var(--ws);">#${i+1} · ${r.suc}</span>
+            <div style="font-size:13px;font-weight:700;color:var(--w);margin-top:1px;">${r.nombre}</div>
+            <div style="font-size:10px;color:var(--ws);">${r.ciudad||"—"}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--y);">${r.breadth.toLocaleString('es-AR')} ha</div>
+            <div style="font-size:10px;color:#E05252;margin-top:2px;">⚡ Faltan ${r.vcaFalt} VCA (${r.vca}/4)</div>
+          </div>
+        </div>
+      </div>`).join("")}
+    </div>`;
+  renderAsistenteResult("🏆 Top Oportunidades por Ha Breadth", html);
+}
+
+// ── CONSULTA 2: Licencias por vencer ─────────────────────────────────────────
+function queryLicenciasVencer(){
+  if(!DATA) return;
+  const allLics = Object.values(DATA.licPorSuc||{}).flat()
+    .filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA"||l.estado==="PRÓXIMA")
+    .sort((a,b)=>(a.dias||9999)-(b.dias||9999));
+
+  const bySuc = {};
+  allLics.forEach(l=>{
+    const s = l.sucursal||"Sin asignar";
+    if(!bySuc[s]) bySuc[s]=[];
+    bySuc[s].push(l);
+  });
+  const estCol={"VENCIDA":"#E05252","CRÍTICA":"#E05252","PRÓXIMA":"#F5C842"};
+  const totalOpp = allLics.reduce((s,l)=>s+(getPrecioLic(l.tipo)||0),0);
+
+  const html = `
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <div style="background:#1A0A0A;border:1px solid #E0525244;border-radius:var(--r8);padding:8px 14px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:20px;font-weight:700;color:#E05252;">${allLics.length}</div>
+        <div style="font-size:9px;color:var(--ws);">URGENTES</div>
+      </div>
+      <div style="background:#1A1200;border:1px solid #F5C84244;border-radius:var(--r8);padding:8px 14px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:20px;font-weight:700;color:#F5C842;">${fmtUSD(totalOpp)}</div>
+        <div style="font-size:9px;color:var(--ws);">OPORTUNIDAD</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:380px;overflow-y:auto;">
+      ${Object.entries(bySuc).sort((a,b)=>b[1].length-a[1].length).map(([suc,lics])=>{
+        const opp = lics.reduce((s,l)=>s+(getPrecioLic(l.tipo)||0),0);
+        return `<div style="background:var(--bs);border-radius:var(--r8);padding:10px 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:13px;font-weight:700;color:var(--w);">${suc}</span>
+            <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:#F5C842;">${fmtUSD(opp)}</span>
+          </div>
+          ${lics.slice(0,3).map(l=>`
+          <div style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0;border-top:1px solid var(--bd);">
+            <span style="color:var(--wm);">${l.org_nombre||"—"} · ${(l.tipo||"").split(" - ")[0]}</span>
+            <span style="color:${estCol[l.estado]||"#888"};font-weight:700;">${l.estado} ${l.dias!==null?l.dias+"d":""}</span>
+          </div>`).join("")}
+          ${lics.length>3?`<div style="font-size:9px;color:var(--ws);margin-top:3px;">+${lics.length-3} más...</div>`:""}
+        </div>`;
+      }).join("")}
+    </div>`;
+  renderAsistenteResult("📋 Licencias Urgentes por Sucursal", html);
+}
+
+// ── CONSULTA 3: Sin ha con dispositivos ──────────────────────────────────────
+function querySinHaConEquipo(){
+  if(!DATA) return;
+  const orgHa = DATA.orgHa||{};
+  const rows = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc, orgs])=>{
+    orgs.forEach(o=>{
+      const ha = orgHa[String(o.id)];
+      if(ha && ha.ha_conn===0 && (o.monitores+o.receptores+o.modems)>0){
+        rows.push({suc, nombre:o.nombre, ciudad:o.ciudad, monitores:o.monitores, receptores:o.receptores, modems:o.modems});
+      }
+    });
+  });
+  rows.sort((a,b)=>(b.modems+b.monitores+b.receptores)-(a.modems+a.monitores+a.receptores));
+
+  const bySuc = {};
+  rows.forEach(r=>{ if(!bySuc[r.suc]) bySuc[r.suc]=0; bySuc[r.suc]++; });
+
+  const html = `
+    <div style="font-size:11px;color:var(--ws);margin-bottom:12px;">${rows.length} organizaciones con equipos sin ha configuradas en Operations Center</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+      ${Object.entries(bySuc).sort((a,b)=>b[1]-a[1]).map(([suc,n])=>
+        `<span style="background:#1A1200;border:1px solid #F5C84244;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:#F5C842;">${suc}: ${n}</span>`
+      ).join("")}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;max-height:380px;overflow-y:auto;">
+      ${rows.slice(0,25).map(r=>`
+      <div style="background:var(--bs);border-radius:var(--r8);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--w);">${r.nombre}</div>
+          <div style="font-size:10px;color:var(--ws);">${r.suc} · ${r.ciudad||"—"}</div>
+        </div>
+        <div style="display:flex;gap:5px;">
+          ${r.monitores>0?`<span style="font-size:10px;background:var(--bb);border:1px solid var(--bd);border-radius:4px;padding:2px 6px;color:var(--wm);">📺 ${r.monitores}</span>`:""}
+          ${r.receptores>0?`<span style="font-size:10px;background:var(--bb);border:1px solid var(--bd);border-radius:4px;padding:2px 6px;color:var(--wm);">📡 ${r.receptores}</span>`:""}
+          ${r.modems>0?`<span style="font-size:10px;background:var(--bb);border:1px solid var(--bd);border-radius:4px;padding:2px 6px;color:var(--blue);">📶 ${r.modems}</span>`:""}
+        </div>
+      </div>`).join("")}
+    </div>`;
+  renderAsistenteResult("⚠️ Sin Ha pero con Dispositivos", html);
+}
+
+// ── CONSULTA 4: Ha en riesgo ──────────────────────────────────────────────────
+function queryHaEnRiesgo(){
+  if(!DATA) return;
+  const orgHa = DATA.orgHa||{};
+  const rows = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc, orgs])=>{
+    orgs.forEach(o=>{
+      const ha = orgHa[String(o.id)];
+      if(ha && ha.ha_riesgo > 0){
+        rows.push({suc, nombre:o.nombre, ciudad:o.ciudad, ha_riesgo:ha.ha_riesgo, ha_conn:ha.ha_conn, pct:ha.ha_conn>0?Math.round(ha.ha_riesgo/ha.ha_conn*100):0});
+      }
+    });
+  });
+  rows.sort((a,b)=>b.ha_riesgo-a.ha_riesgo);
+  const total = rows.reduce((s,r)=>s+r.ha_riesgo,0);
+
+  const html = `
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="background:#1A0A0A;border:1px solid #E0525244;border-radius:var(--r8);padding:8px 14px;">
+        <div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:#E05252;">${total.toLocaleString('es-AR')} ha</div>
+        <div style="font-size:9px;color:var(--ws);">TOTAL EN RIESGO</div>
+      </div>
+      <div style="background:var(--bs);border:1px solid var(--bd);border-radius:var(--r8);padding:8px 14px;">
+        <div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--wm);">${rows.length}</div>
+        <div style="font-size:9px;color:var(--ws);">ORGANIZACIONES</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;max-height:400px;overflow-y:auto;">
+      ${rows.slice(0,30).map((r,i)=>`
+      <div style="background:var(--bs);border-radius:var(--r8);padding:8px 12px;border-left:3px solid #E05252;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+          <div>
+            <span style="font-size:10px;color:var(--ws);">#${i+1} · ${r.suc}</span>
+            <div style="font-size:12px;font-weight:600;color:var(--w);">${r.nombre}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:#E05252;">${r.ha_riesgo.toLocaleString('es-AR')} ha</div>
+            <div style="font-size:9px;color:var(--ws);">${r.pct}% de sus ha conn.</div>
+          </div>
+        </div>
+      </div>`).join("")}
+    </div>`;
+  renderAsistenteResult("🔴 Ha en Riesgo por Organización", html);
+}
+
+// ── CONSULTA 5: Cruce triple ──────────────────────────────────────────────────
+function queryCruceTriple(){
+  if(!DATA) return;
+  const cde = DATA.cdeByOrg||{};
+  const licPorOrg = {};
+  Object.values(DATA.licPorSuc||{}).flat().forEach(l=>{
+    if(!licPorOrg[l.org_id]) licPorOrg[l.org_id]=[];
+    licPorOrg[l.org_id].push(l);
+  });
+
+  const rows = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc, orgs])=>{
+    orgs.forEach(o=>{
+      const d = cde[String(o.id)];
+      if(!d) return;
+      const breadth = d.breadth_ha||0;
+      const vcaFalt = Math.max(0, 4-d.prom_r12);
+      const lics = licPorOrg[String(o.id)]||[];
+      const licUrg = lics.filter(l=>l.estado==="VENCIDA"||l.estado==="CRÍTICA"||l.estado==="PRÓXIMA");
+      const engBajo = d.eng_level==="R12 Digitally Engaged"||d.eng_level==="Land & Digital";
+      if(breadth>0 && vcaFalt>0 && licUrg.length>0 && engBajo){
+        const oppLic = licUrg.reduce((s,l)=>s+(getPrecioLic(l.tipo)||0),0);
+        rows.push({suc, nombre:o.nombre, ciudad:o.ciudad, breadth, vcaFalt, vca:d.prom_r12, eng:d.eng_level, licUrg:licUrg.length, oppLic});
+      }
+    });
+  });
+  rows.sort((a,b)=>b.breadth-a.breadth);
+  const ENG_COL={"R12 Digitally Engaged":"#7DC6FF","Land & Digital":"#D4A0FF"};
+
+  const html = `
+    <div style="font-size:11px;color:var(--ws);margin-bottom:12px;">${rows.length} orgs con breadth + bajo engagement + licencia urgente — máxima prioridad</div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;">
+      ${rows.length===0?'<div style="text-align:center;padding:20px;color:var(--ws);">No hay organizaciones con los 3 criterios simultáneos</div>':
+      rows.slice(0,20).map((r,i)=>`
+      <div style="background:var(--bs);border-radius:var(--r8);padding:10px 12px;border:1px solid #F5C84244;">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <span style="font-size:9px;color:var(--ws);">#${i+1} · ${r.suc}</span>
+            <div style="font-size:13px;font-weight:700;color:var(--w);">${r.nombre}</div>
+            <div style="font-size:10px;color:${ENG_COL[r.eng]||'#888'};margin-top:2px;">${r.eng}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--y);">${r.breadth.toLocaleString('es-AR')} ha</div>
+            <div style="font-size:10px;color:#E05252;">⚡ ${r.vcaFalt} VCA · 📋 ${r.licUrg} lic.</div>
+            ${r.oppLic>0?`<div style="font-size:10px;color:#F5C842;">💰 ${fmtUSD(r.oppLic)}</div>`:""}
+          </div>
+        </div>
+      </div>`).join("")}
+    </div>`;
+  renderAsistenteResult("🎯 Cruce: Breadth + Bajo Engagement + Licencia", html);
+}
+
+// ── CONSULTA 6: Brecha entre labores ─────────────────────────────────────────
+function queryBrechaLabores(){
+  if(!DATA) return;
+  const orgHa = DATA.orgHa||{};
+  const rows = [];
+  Object.entries(DATA.orgsPorSuc||{}).forEach(([suc, orgs])=>{
+    orgs.forEach(o=>{
+      const ha = orgHa[String(o.id)];
+      if(!ha) return;
+      const labores = [ha.ha_siembra||0, ha.ha_prep||0, ha.ha_pulv||0, ha.ha_cosecha||0];
+      const max = Math.max(...labores);
+      const min = Math.min(...labores.filter(v=>v>0));
+      const brecha = max - (isFinite(min)?min:0);
+      if(brecha > 500 && max > 0){
+        rows.push({suc, nombre:o.nombre, ciudad:o.ciudad,
+          ha_siembra:ha.ha_siembra||0, ha_prep:ha.ha_prep||0,
+          ha_pulv:ha.ha_pulv||0, ha_cosecha:ha.ha_cosecha||0,
+          max, brecha});
+      }
+    });
+  });
+  rows.sort((a,b)=>b.brecha-a.brecha);
+
+  const html = `
+    <div style="font-size:11px;color:var(--ws);margin-bottom:12px;">${rows.length} orgs con brecha > 500 ha entre labores</div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;">
+      ${rows.slice(0,25).map((r,i)=>{
+        const labs = [["🌱 Siembra",r.ha_siembra],["🚜 Prep.",r.ha_prep],["💧 Pulv.",r.ha_pulv],["🌾 Cosecha",r.ha_cosecha]];
+        const maxVal = Math.max(...labs.map(l=>l[1]));
+        return `<div style="background:var(--bs);border-radius:var(--r8);padding:10px 12px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <div>
+              <span style="font-size:10px;color:var(--ws);">#${i+1} · ${r.suc}</span>
+              <div style="font-size:12px;font-weight:700;color:var(--w);">${r.nombre}</div>
+            </div>
+            <div style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:#E05252;">Δ ${r.brecha.toLocaleString('es-AR')} ha</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+            ${labs.map(([lbl,val])=>{
+              const pct = maxVal>0?Math.round(val/maxVal*100):0;
+              const col = pct>=80?"#6EE26E":pct>=40?"#F5C842":"#E05252";
+              return `<div style="text-align:center;">
+                <div style="font-size:9px;color:var(--ws);margin-bottom:3px;">${lbl}</div>
+                <div style="height:40px;background:var(--bd);border-radius:3px;display:flex;align-items:flex-end;overflow:hidden;">
+                  <div style="width:100%;height:${Math.max(pct,3)}%;background:${col};border-radius:3px;"></div>
+                </div>
+                <div style="font-size:8px;font-family:var(--font-mono);color:${col};margin-top:2px;">${val.toLocaleString('es-AR')}</div>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  renderAsistenteResult("📊 Brecha entre Labores", html);
+}
+// Cargar SheetJS en background (solo para descarga de Excel)
+const xlsxScript=document.createElement("script");
+xlsxScript.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+document.head.appendChild(xlsxScript);
+// Arrancar carga de datos inmediatamente (JSON, no necesita XLSX)
+loadAndRender();
+</script>
+</body>
+</html>
