@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consolidador de Límites ISG</title>
+<style>
+  :root{
+    --bg:#111111;
+    --panel:#181818;
+    --panel-2:#1e1e1e;
+    --line:#2b2b2b;
+    --text:#eaeaea;
+    --text-dim:#9a9a9a;
+    --green:#367C2B;
+    --green-lt:#7DC655;
+    --yellow:#FFDE00;
+    --orange:#F5A623;
+    --danger:#c85c5c;
+    --radius:8px;
+    font-family: 'Titillium Web','Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:6px;
+  }
+  .badge{
+    width:38px;height:38px;border-radius:9px;
+    background:linear-gradient(135deg,var(--green),var(--green-lt));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:17px;color:#0d1a0a;
+    flex:none;
+  }
+  h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .sub{color:var(--text-dim);font-size:13px;margin:4px 0 26px 52px;}
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:18px;
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .panel h2{
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.09em;
+    color:var(--text-dim);
+    margin:0 0 14px 0;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel h2 .n{
+    color:var(--green-lt);
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* Dropzone */
+  #dropzone{
+    border:1.5px dashed #3a3a3a;
+    border-radius:var(--radius);
+    padding:34px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+    background:var(--panel-2);
+  }
+  #dropzone.drag{
+    border-color:var(--green-lt);
+    background:#16241380;
+  }
+  #dropzone .icon{font-size:26px;margin-bottom:8px;opacity:.85;}
+  #dropzone .main{font-size:14.5px;font-weight:600;}
+  #dropzone .hint{font-size:12.5px;color:var(--text-dim);margin-top:4px;}
+  input[type=file]{display:none;}
+
+  #fileErrors{margin-top:10px;font-size:12.5px;color:var(--danger);}
+
+  /* Bulk bar */
+  .bulkbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:flex-end;
+  }
+  .field{
+    display:flex;flex-direction:column;gap:5px;
+  }
+  .field label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;}
+  select, input[type=text], input[type=number]{
+    background:#0e0e0e;
+    border:1px solid #333;
+    color:var(--text);
+    border-radius:6px;
+    padding:7px 9px;
+    font-size:13px;
+    font-family:inherit;
+    min-width:150px;
+  }
+  select:focus, input:focus{outline:1.5px solid var(--green-lt);}
+  input[type=number]{min-width:80px;}
+
+  button{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:600;
+    border-radius:6px;
+    padding:8px 14px;
+    border:1px solid transparent;
+    cursor:pointer;
+    transition:opacity .12s, transform .05s;
+  }
+  button:active{transform:translateY(1px);}
+  .btn-primary{background:var(--green);color:#eafbe4;border-color:var(--green);}
+  .btn-primary:hover{background:var(--green-lt);color:#0d1a0a;}
+  .btn-ghost{background:transparent;color:var(--text);border-color:#3a3a3a;}
+  .btn-ghost:hover{border-color:var(--green-lt);color:var(--green-lt);}
+  .btn-mini{padding:4px 8px;font-size:12px;}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* Table */
+  .tablewrap{overflow-x:auto;border-radius:6px;border:1px solid var(--line);}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:920px;}
+  thead th{
+    text-align:left;
+    background:#151515;
+    color:var(--text-dim);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding:9px 10px;
+    border-bottom:1px solid var(--line);
+    position:sticky;top:0;
+  }
+  tbody td{
+    padding:6px 10px;
+    border-bottom:1px solid #232323;
+    vertical-align:middle;
+  }
+  tbody tr:hover{background:#1b1b1b;}
+  tbody tr.sel{background:#16240f;}
+  td.file{color:var(--text-dim);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  td input[type=text]{min-width:130px;width:100%;}
+  td select{min-width:130px;width:100%;}
+  td input[type=number]{width:60px;}
+  .rowchk{transform:scale(1.05);accent-color:var(--green-lt);}
+
+  #emptyRow{padding:28px;text-align:center;color:var(--text-dim);font-size:13px;}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+  .stats{font-size:12.5px;color:var(--text-dim);}
+  .stats b{color:var(--yellow);font-weight:700;}
+  .stats .grp{color:var(--green-lt);}
+
+  .exportgrid{display:flex;gap:12px;flex-wrap:wrap;}
+  .exportcard{
+    flex:1;min-width:220px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+  }
+  .exportcard h3{margin:0 0 4px;font-size:14px;}
+  .exportcard p{margin:0 0 12px;font-size:12px;color:var(--text-dim);line-height:1.4;}
+  .exportcard button{width:100%;}
+  .tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:20px;margin-left:6px;vertical-align:1px;}
+  .tag.rec{background:#233a1a;color:var(--green-lt);border:1px solid #345c26;}
+  .tag.beta{background:#3a2f13;color:var(--orange);border:1px solid #5c4a1f;}
+
+  .privacy{
+    font-size:11.5px;color:var(--text-dim);
+    display:flex;gap:6px;align-items:center;margin-top:16px;
+  }
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--green-lt);flex:none;}
+
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:#333;border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">JD</div>
+    <div>
+      <h1>Consolidador de Límites ISG</h1>
+    </div>
+  </header>
+  <div class="sub">Cargá KML/KMZ, asigná atributos por lote y exportá un único archivo vectorial — todo en tu navegador.</div>
+
+  <div class="grid">
+
+    <div class="panel">
+      <h2>1 · Cargar archivos</h2>
+      <div id="dropzone">
+        <div class="icon">📂</div>
+        <div class="main">Arrastrá tus archivos .kml / .kmz acá</div>
+        <div class="hint">o hacé clic para seleccionarlos — podés cargar varios a la vez</div>
+      </div>
+      <input type="file" id="fileInput" multiple accept=".kml,.kmz">
+      <div id="fileErrors"></div>
+    </div>
+
+    <div class="panel" id="bulkPanel" style="display:none;">
+      <h2>2 · Asignar atributos <span class="n" id="selCount">0 seleccionados</span></h2>
+      <div class="bulkbar">
+        <div class="field">
+          <label>Cliente (CLIENT_NAM)</label>
+          <select id="bulkClient"></select>
+        </div>
+        <div class="field">
+          <label>Campo / Grupo (FARM_NAME)</label>
+          <select id="bulkFarm"></select>
+        </div>
+        <div class="field">
+          <label>Tipo (POLYGONTYP)</label>
+          <input type="number" id="bulkType" value="0" step="1">
+        </div>
+        <button class="btn-primary" id="applyBulk">Aplicar a seleccionados</button>
+        <button class="btn-ghost btn-mini" id="manageValues" style="align-self:center;">Gestionar valores…</button>
+      </div>
+    </div>
+
+    <div class="panel" id="tablePanel" style="display:none;">
+      <div class="toolbar">
+        <h2 style="margin:0;">3 · Tabla de atributos <span class="n" id="rowCount">0 lotes</span></h2>
+        <div class="stats" id="groupStats"></div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34px;"><input type="checkbox" id="selectAll" class="rowchk"></th>
+              <th>Archivo origen</th>
+              <th>FIELD_NAME</th>
+              <th>CLIENT_NAM</th>
+              <th>FARM_NAME</th>
+              <th>POLYGONTYP</th>
+              <th style="width:40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="exportPanel" style="display:none;">
+      <h2>4 · Exportar</h2>
+      <div class="exportgrid">
+        <div class="exportcard">
+          <h3>Shapefile <span class="tag rec">Centro de Operaciones</span></h3>
+          <p>.shp + .shx + .dbf + .prj + .cpg comprimidos en .zip. Formato estándar para Operations Center, Agrocad y QGIS.</p>
+          <button class="btn-primary" id="exportShp">Descargar .zip</button>
+        </div>
+        <div class="exportcard">
+          <h3>GeoJSON</h3>
+          <p>Formato de texto simple, ideal para revisar en QGIS, web maps o editar a mano.</p>
+          <button class="btn-ghost" id="exportGeojson">Descargar .geojson</button>
+        </div>
+        <div class="exportcard">
+          <h3>KML consolidado</h3>
+          <p>Un solo KML con todos los lotes y sus atributos como descripción, para abrir en Google Earth.</p>
+          <button class="btn-ghost" id="exportKml">Descargar .kml</button>
+        </div>
+      </div>
+      <div class="privacy"><span class="dot"></span> Todo el procesamiento ocurre en tu navegador — ningún dato de clientes se envía a un servidor.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   Consolidador de Límites ISG
+   - Parsea KML/KMZ en el navegador
+   - Permite asignar CLIENT_NAM / FARM_NAME / POLYGONTYP por lote
+   - Exporta Shapefile (.zip), GeoJSON y KML consolidado
+   Todo corre client-side. Sin dependencias externas.
+   ========================================================= */
+
+const state = {
+  rows: [],           // {id, sourceFile, fieldName, client, farm, type, rings:[[ [lon,lat],... ], ...], selected}
+  clientValues: ["Siete Hermanos"],
+  farmValues: ["Seguí", "Crespo", "Paraná"],
+  nextId: 1,
+};
+
+/* ---------------- DOM refs ---------------- */
+const dropzone   = document.getElementById('dropzone');
+const fileInput  = document.getElementById('fileInput');
+const fileErrors = document.getElementById('fileErrors');
+const bulkPanel  = document.getElementById('bulkPanel');
+const tablePanel = document.getElementById('tablePanel');
+const exportPanel= document.getElementById('exportPanel');
+const tbody      = document.getElementById('tbody');
+const rowCountEl = document.getElementById('rowCount');
+const selCountEl = document.getElementById('selCount');
+const groupStats = document.getElementById('groupStats');
+const bulkClient = document.getElementById('bulkClient');
+const bulkFarm   = document.getElementById('bulkFarm');
+const bulkType   = document.getElementById('bulkType');
+const selectAll  = document.getElementById('selectAll');
+
+/* ---------------- Dropzone wiring ---------------- */
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+async function handleFiles(fileList) {
+  fileErrors.textContent = '';
+  const errors = [];
+  for (const file of fileList) {
+    const lower = file.name.toLowerCase();
+    try {
+      let kmlText;
+      if (lower.endsWith('.kmz')) {
+        kmlText = await extractKmlFromKmz(file);
+      } else if (lower.endsWith('.kml')) {
+        kmlText = await file.text();
+      } else {
+        errors.push(`${file.name}: formato no soportado (solo .kml / .kmz)`);
+        continue;
+      }
+      const baseName = file.name.replace(/\.(kml|kmz)$/i, '');
+      const polys = parseKmlPolygons(kmlText);
+      if (polys.length === 0) {
+        errors.push(`${file.name}: no se encontraron polígonos`);
+        continue;
+      }
+      polys.forEach((rings, idx) => {
+        const fieldName = polys.length > 1 ? `${baseName}_${idx + 1}` : baseName;
+        state.rows.push({
+          id: state.nextId++,
+          sourceFile: file.name,
+          fieldName,
+          client: state.clientValues[0] || '',
+          farm: '',
+          type: 0,
+          rings,
+          selected: false,
+        });
+      });
+    } catch (err) {
+      console.error(err);
+      errors.push(`${file.name}: error al procesar (${err.message || err})`);
+    }
+  }
+  if (errors.length) fileErrors.innerHTML = errors.map(e => `• ${e}`).join('<br>');
+  fileInput.value = '';
+  refreshDropdownOptions();
+  renderTable();
+  togglePanels();
+}
+
+function togglePanels() {
+  const has = state.rows.length > 0;
+  bulkPanel.style.display = has ? '' : 'none';
+  tablePanel.style.display = has ? '' : 'none';
+  exportPanel.style.display = has ? '' : 'none';
+}
+
+/* ---------------- ZIP (KMZ) reading ---------------- */
+/* Minimal ZIP reader: locates EOCD, reads central directory,
+   extracts the first .kml entry. Supports STORE (0) and DEFLATE (8)
+   via the browser's native DecompressionStream. */
+async function extractKmlFromKmz(file) {
+  const buf = await file.arrayBuffer();
+  const dv = new DataView(buf);
+  const bytes = new Uint8Array(buf);
+
+  // Find End Of Central Directory record (signature 0x06054b50)
+  let eocdOffset = -1;
+  const maxBack = Math.min(bytes.length, 65557);
+  for (let i = bytes.length - 22; i >= bytes.length - maxBack && i >= 0; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocdOffset = i; break; }
+  }
+  if (eocdOffset === -1) throw new Error('KMZ inválido (no se encontró índice ZIP)');
+
+  const cdEntries = dv.getUint16(eocdOffset + 10, true);
+  const cdSize = dv.getUint32(eocdOffset + 12, true);
+  const cdOffset = dv.getUint32(eocdOffset + 16, true);
+
+  let ptr = cdOffset;
+  for (let i = 0; i < cdEntries; i++) {
+    if (dv.getUint32(ptr, true) !== 0x02014b50) throw new Error('KMZ inválido (directorio central corrupto)');
+    const compMethod = dv.getUint16(ptr + 10, true);
+    const compSize   = dv.getUint32(ptr + 20, true);
+    const nameLen    = dv.getUint16(ptr + 28, true);
+    const extraLen   = dv.getUint16(ptr + 30, true);
+    const commentLen = dv.getUint16(ptr + 32, true);
+    const localOffset= dv.getUint32(ptr + 42, true);
+    const name = new TextDecoder('utf-8').decode(bytes.subarray(ptr + 46, ptr + 46 + nameLen));
+
+    if (name.toLowerCase().endsWith('.kml')) {
+      // Read local file header to find where data actually starts
+      const lfNameLen  = dv.getUint16(localOffset + 26, true);
+      const lfExtraLen = dv.getUint16(localOffset + 28, true);
+      const dataStart = localOffset + 30 + lfNameLen + lfExtraLen;
+      const compData = bytes.subarray(dataStart, dataStart + compSize);
+
+      let outBytes;
+      if (compMethod === 0) {
+        outBytes = compData;
+      } else if (compMethod === 8) {
+        const ds = new DecompressionStream('deflate-raw');
+        const stream = new Blob([compData]).stream().pipeThrough(ds);
+        outBytes = new Uint8Array(await new Response(stream).arrayBuffer());
+      } else {
+        throw new Error(`método de compresión ZIP no soportado (${compMethod})`);
+      }
+      return new TextDecoder('utf-8').decode(outBytes);
+    }
+    ptr += 46 + nameLen + extraLen + commentLen;
+  }
+  throw new Error('no se encontró un .kml dentro del KMZ');
+}
+
+/* ---------------- KML parsing ---------------- */
+function parseKmlPolygons(kmlText) {
+  const doc = new DOMParser().parseFromString(kmlText, 'application/xml');
+  const perr = doc.querySelector('parsererror');
+  if (perr) throw new Error('KML mal formado');
+
+  const placemarks = Array.from(doc.getElementsByTagName('Placemark'));
+  const results = [];
+
+  const sourceEls = placemarks.length ? placemarks : [doc];
+  for (const pm of sourceEls) {
+    const polyEls = Array.from(pm.getElementsByTagName('Polygon'));
+    for (const poly of polyEls) {
+      const rings = [];
+      const outer = poly.getElementsByTagName('outerBoundaryIs')[0];
+      if (!outer) continue;
+      const outerCoords = outer.getElementsByTagName('coordinates')[0];
+      if (!outerCoords) continue;
+      rings.push(parseCoordText(outerCoords.textContent));
+
+      const inners = Array.from(poly.getElementsByTagName('innerBoundaryIs'));
+      for (const inner of inners) {
+        const ic = inner.getElementsByTagName('coordinates')[0];
+        if (ic) rings.push(parseCoordText(ic.textContent));
+      }
+      if (rings[0] && rings[0].length >= 3) results.push(rings);
+    }
+  }
+  return results;
+}
+
+function parseCoordText(text) {
+  const pts = text.trim().split(/\s+/).filter(Boolean).map(tok => {
+    const [lon, lat] = tok.split(',').map(Number);
+    return [lon, lat];
+  });
+  if (pts.length && (pts[0][0] !== pts[pts.length - 1][0] || pts[0][1] !== pts[pts.length - 1][1])) {
+    pts.push([pts[0][0], pts[0][1]]);
+  }
+  return pts;
+}
+
+/* ---------------- Dropdown value management ---------------- */
+const NEW_VALUE = '__new__';
+
+function refreshDropdownOptions() {
+  fillSelect(bulkClient, state.clientValues, state.clientValues[0] || '');
+  fillSelect(bulkFarm, state.farmValues, state.farmValues[0] || '');
+}
+
+function fillSelect(selectEl, values, selected) {
+  const prev = selectEl.value;
+  selectEl.innerHTML = '';
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    selectEl.appendChild(opt);
+  });
+  const addOpt = document.createElement('option');
+  addOpt.value = NEW_VALUE; addOpt.textContent = '+ Nuevo valor…';
+  selectEl.appendChild(addOpt);
+  if (values.includes(prev)) selectEl.value = prev;
+  else if (selected && values.includes(selected)) selectEl.value = selected;
+}
+
+function handleNewValueSelect(selectEl, list, onPicked) {
+  selectEl.addEventListener('change', () => {
+    if (selectEl.value === NEW_VALUE) {
+      const v = prompt('Nuevo valor:');
+      if (v && v.trim()) {
+        const clean = v.trim();
+        if (!list.includes(clean)) list.push(clean);
+        refreshDropdownOptions();
+        renderTable();
+        selectEl.value = clean;
+        onPicked(clean);
+      } else {
+        selectEl.value = list[0] || '';
+      }
+    } else {
+      onPicked(selectEl.value);
+    }
+  });
+}
+handleNewValueSelect(bulkClient, state.clientValues, () => {});
+handleNewValueSelect(bulkFarm, state.farmValues, () => {});
+
+document.getElementById('manageValues').addEventListener('click', () => {
+  const c = prompt('Lista de clientes (separados por coma):', state.clientValues.join(', '));
+  if (c !== null) state.clientValues = c.split(',').map(s => s.trim()).filter(Boolean);
+  const f = prompt('Lista de campos/grupos (separados por coma):', state.farmValues.join(', '));
+  if (f !== null) state.farmValues = f.split(',').map(s => s.trim()).filter(Boolean);
+  refreshDropdownOptions();
+  renderTable();
+});
+
+/* ---------------- Table rendering ---------------- */
+function renderTable() {
+  tbody.innerHTML = '';
+  if (state.rows.length === 0) {
+    rowCountEl.textContent = '0 lotes';
+    groupStats.textContent = '';
+    return;
+  }
+
+  state.rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.className = row.selected ? 'sel' : '';
+
+    // checkbox
+    const tdChk = document.createElement('td');
+    const chk = document.createElement('input');
+    chk.type = 'checkbox'; chk.className = 'rowchk'; chk.checked = row.selected;
+    chk.addEventListener('change', () => { row.selected = chk.checked; tr.className = row.selected ? 'sel' : ''; updateSelCount(); });
+    tdChk.appendChild(chk); tr.appendChild(tdChk);
+
+    // source file
+    const tdFile = document.createElement('td');
+    tdFile.className = 'file'; tdFile.textContent = row.sourceFile; tdFile.title = row.sourceFile;
+    tr.appendChild(tdFile);
+
+    // field name
+    const tdField = document.createElement('td');
+    const inField = document.createElement('input');
+    inField.type = 'text'; inField.value = row.fieldName;
+    inField.addEventListener('input', () => row.fieldName = inField.value);
+    tdField.appendChild(inField); tr.appendChild(tdField);
+
+    // client select
+    const tdClient = document.createElement('td');
+    const selClient = document.createElement('select');
+    fillSelect(selClient, state.clientValues, row.client);
+    selClient.value = row.client && state.clientValues.includes(row.client) ? row.client : (state.clientValues[0] || '');
+    row.client = selClient.value;
+    handleNewValueSelect(selClient, state.clientValues, v => { row.client = v; updateGroupStats(); });
+    tdClient.appendChild(selClient); tr.appendChild(tdClient);
+
+    // farm select
+    const tdFarm = document.createElement('td');
+    const selFarm = document.createElement('select');
+    fillSelect(selFarm, state.farmValues, row.farm);
+    if (row.farm && state.farmValues.includes(row.farm)) selFarm.value = row.farm;
+    else if (state.farmValues[0]) { selFarm.value = state.farmValues[0]; row.farm = state.farmValues[0]; }
+    handleNewValueSelect(selFarm, state.farmValues, v => { row.farm = v; updateGroupStats(); });
+    tdFarm.appendChild(selFarm); tr.appendChild(tdFarm);
+
+    // type
+    const tdType = document.createElement('td');
+    const inType = document.createElement('input');
+    inType.type = 'number'; inType.step = '1'; inType.value = row.type;
+    inType.addEventListener('input', () => row.type = parseInt(inType.value || '0', 10));
+    tdType.appendChild(inType); tr.appendChild(tdType);
+
+    // delete
+    const tdDel = document.createElement('td');
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn-ghost btn-mini'; btnDel.textContent = '✕';
+    btnDel.title = 'Quitar lote';
+    btnDel.addEventListener('click', () => {
+      state.rows = state.rows.filter(r => r.id !== row.id);
+      renderTable(); togglePanels();
+    });
+    tdDel.appendChild(btnDel); tr.appendChild(tdDel);
+
+    tbody.appendChild(tr);
+  });
+
+  rowCountEl.textContent = `${state.rows.length} lote${state.rows.length === 1 ? '' : 's'}`;
+  updateSelCount();
+  updateGroupStats();
+}
+
+function updateSelCount() {
+  const n = state.rows.filter(r => r.selected).length;
+  selCountEl.textContent = `${n} seleccionado${n === 1 ? '' : 's'}`;
+  selectAll.checked = n > 0 && n === state.rows.length;
+}
+
+function updateGroupStats() {
+  const byFarm = {};
+  state.rows.forEach(r => { const k = r.farm || '(sin asignar)'; byFarm[k] = (byFarm[k] || 0) + 1; });
+  const parts = Object.entries(byFarm).map(([k, v]) => `<span class="grp">${escapeHtml(k)}</span>: <b>${v}</b>`);
+  groupStats.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+selectAll.addEventListener('change', () => {
+  state.rows.forEach(r => r.selected = selectAll.checked);
+  renderTable();
+});
+
+document.getElementById('applyBulk').addEventListener('click', () => {
+  const client = bulkClient.value === NEW_VALUE ? '' : bulkClient.value;
+  const farm   = bulkFarm.value === NEW_VALUE ? '' : bulkFarm.value;
+  const type   = parseInt(bulkType.value || '0', 10);
+  let count = 0;
+  state.rows.forEach(r => {
+    if (r.selected) {
+      if (client) r.client = client;
+      if (farm) r.farm = farm;
+      r.type = type;
+      count++;
+    }
+  });
+  if (count === 0) {
+    alert('Seleccioná al menos un lote en la tabla (columna de la izquierda) antes de aplicar.');
+    return;
+  }
+  renderTable();
+});
+
+/* =========================================================
+   EXPORTACIÓN
+   ========================================================= */
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function validateRows() {
+  const missing = state.rows.filter(r => !r.client || !r.farm || !r.fieldName);
+  if (missing.length) {
+    alert(`Hay ${missing.length} lote(s) sin CLIENT_NAM, FARM_NAME o FIELD_NAME completo. Revisá la tabla antes de exportar.`);
+    return false;
+  }
+  return true;
+}
+
+/* ---------- GeoJSON ---------- */
+document.getElementById('exportGeojson').addEventListener('click', () => {
+  if (!validateRows()) return;
+  const fc = {
+    type: 'FeatureCollection',
+    features: state.rows.map(r => ({
+      type: 'Feature',
+      properties: { CLIENT_NAM: r.client, FARM_NAME: r.farm, FIELD_NAME: r.fieldName, POLYGONTYP: r.type },
+      geometry: { type: 'Polygon', coordinates: r.rings },
+    })),
+  };
+  downloadBlob(new Blob([JSON.stringify(fc, null, 2)], { type: 'application/geo+json' }), 'Consolidado.geojson');
+});
+
+/* ---------- KML consolidado ---------- */
+document.getElementById('exportKml').addEventListener('click', () => {
+  if (!validateRows()) return;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const placemarks = state.rows.map(r => {
+    const ringToCoordText = ring => ring.map(([lon,lat]) => `${lon},${lat},0`).join(' ');
+    const inner = r.rings.slice(1).map(ring => `<innerBoundaryIs><LinearRing><coordinates>${ringToCoordText(ring)}</coordinates></LinearRing></innerBoundaryIs>`).join('');
+    return `<Placemark>
+  <name>${esc(r.fieldName)}</name>
+  <description>CLIENT_NAM=${esc(r.client)} | FARM_NAME=${esc(r.farm)} | POLYGONTYP=${r.type}</description>
+  <ExtendedData>
+    <Data name="CLIENT_NAM"><value>${esc(r.client)}</value></Data>
+    <Data name="FARM_NAME"><value>${esc(r.farm)}</value></Data>
+    <Data name="FIELD_NAME"><value>${esc(r.fieldName)}</value></Data>
+    <Data name="POLYGONTYP"><value>${r.type}</value></Data>
+  </ExtendedData>
+  <Polygon>
+    <outerBoundaryIs><LinearRing><coordinates>${ringToCoordText(r.rings[0])}</coordinates></LinearRing></outerBoundaryIs>
+    ${inner}
+  </Polygon>
+</Placemark>`;
+  }).join('\n');
+
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Consolidado ISG</name>
+    ${placemarks}
+  </Document>
+</kml>`;
+  downloadBlob(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }), 'Consolidado.kml');
+});
+
+/* ---------- Shapefile (.shp/.shx/.dbf/.prj/.cpg -> .zip) ---------- */
+document.getElementById('exportShp').addEventListener('click', () => {
+  if (!validateRows()) return;
+  try {
+    const zipBlob = buildShapefileZip(state.rows);
+    downloadBlob(zipBlob, 'Consolidado_Shapefile.zip');
+  } catch (err) {
+    console.error(err);
+    alert('Ocurrió un error generando el Shapefile: ' + (err.message || err));
+  }
+});
+
+/* ---- geometry helpers ---- */
+function ringArea(ring) {
+  let a = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [x1,y1] = ring[i], [x2,y2] = ring[i+1];
+    a += (x1 * y2 - x2 * y1);
+  }
+  return a / 2;
+}
+function orient(ring, wantPositive) {
+  const isPos = ringArea(ring) > 0;
+  return isPos === wantPositive ? ring : ring.slice().reverse();
+}
+function fixRings(rings) {
+  // ESRI convention: outer ring clockwise (negative shoelace area), holes counter-clockwise (positive)
+  return rings.map((ring, i) => orient(ring, i > 0));
+}
+
+/* ---- SHP + SHX ---- */
+function buildShpShx(rows) {
+  const fixedRows = rows.map(r => ({ ...r, rings: fixRings(r.rings) }));
+
+  // pre-compute per-record sizes
+  let totalShpContentBytes = 0;
+  const recMeta = fixedRows.map(r => {
+    const numParts = r.rings.length;
+    const numPoints = r.rings.reduce((s, ring) => s + ring.length, 0);
+    const contentBytes = 4 + 32 + 4 + 4 + numParts * 4 + numPoints * 16; // shapeType+box+numParts+numPoints+parts+points
+    totalShpContentBytes += 8 + contentBytes; // record header (8) + content
+    return { numParts, numPoints, contentBytes };
+  });
+
+  let gXmin = Infinity, gYmin = Infinity, gXmax = -Infinity, gYmax = -Infinity;
+  fixedRows.forEach(r => r.rings.forEach(ring => ring.forEach(([x,y]) => {
+    if (x < gXmin) gXmin = x; if (x > gXmax) gXmax = x;
+    if (y < gYmin) gYmin = y; if (y > gYmax) gYmax = y;
+  })));
+  if (!isFinite(gXmin)) { gXmin=gYmin=gXmax=gYmax=0; }
+
+  const shpTotalLen = 100 + totalShpContentBytes;
+  const shxTotalLen = 100 + fixedRows.length * 8;
+
+  const shpBuf = new ArrayBuffer(shpTotalLen);
+  const shxBuf = new ArrayBuffer(shxTotalLen);
+  const shpDv = new DataView(shpBuf);
+  const shxDv = new DataView(shxBuf);
+
+  // --- SHP header ---
+  shpDv.setInt32(0, 9994, false);           // file code, big-endian
+  for (let o = 4; o <= 20; o += 4) shpDv.setInt32(o, 0, false);
+  shpDv.setInt32(24, shpTotalLen / 2, false); // file length in 16-bit words, big-endian
+  shpDv.setInt32(28, 1000, true);             // version, little-endian
+  shpDv.setInt32(32, 5, true);                // shape type = polygon
+  shpDv.setFloat64(36, gXmin, true);
+  shpDv.setFloat64(44, gYmin, true);
+  shpDv.setFloat64(52, gXmax, true);
+  shpDv.setFloat64(60, gYmax, true);
+  shpDv.setFloat64(68, 0, true); shpDv.setFloat64(76, 0, true); // Zmin/Zmax
+  shpDv.setFloat64(84, 0, true); shpDv.setFloat64(92, 0, true); // Mmin/Mmax
+
+  // --- SHX header (same layout, file length differs) ---
+  shxDv.setInt32(0, 9994, false);
+  for (let o = 4; o <= 20; o += 4) shxDv.setInt32(o, 0, false);
+  shxDv.setInt32(24, shxTotalLen / 2, false);
+  shxDv.setInt32(28, 1000, true);
+  shxDv.setInt32(32, 5, true);
+  shxDv.setFloat64(36, gXmin, true);
+  shxDv.setFloat64(44, gYmin, true);
+  shxDv.setFloat64(52, gXmax, true);
+  shxDv.setFloat64(60, gYmax, true);
+  shxDv.setFloat64(68, 0, true); shxDv.setFloat64(76, 0, true);
+  shxDv.setFloat64(84, 0, true); shxDv.setFloat64(92, 0, true);
+
+  let shpOffset = 100;
+  let shxOffset = 100;
+
+  fixedRows.forEach((r, idx) => {
+    const meta = recMeta[idx];
+    const recordNum = idx + 1;
+    const contentWords = meta.contentBytes / 2;
+
+    // SHX entry: offset (in words) + content length (in words), big-endian
+    shxDv.setInt32(shxOffset, shpOffset / 2, false);
+    shxDv.setInt32(shxOffset + 4, contentWords, false);
+    shxOffset += 8;
+
+    // SHP record header
+    shpDv.setInt32(shpOffset, recordNum, false);
+    shpDv.setInt32(shpOffset + 4, contentWords, false);
+    let p = shpOffset + 8;
+
+    shpDv.setInt32(p, 5, true); p += 4; // shape type polygon
+
+    let xmin=Infinity,ymin=Infinity,xmax=-Infinity,ymax=-Infinity;
+    r.rings.forEach(ring => ring.forEach(([x,y]) => {
+      if (x<xmin) xmin=x; if (x>xmax) xmax=x;
+      if (y<ymin) ymin=y; if (y>ymax) ymax=y;
+    }));
+    shpDv.setFloat64(p, xmin, true); p+=8;
+    shpDv.setFloat64(p, ymin, true); p+=8;
+    shpDv.setFloat64(p, xmax, true); p+=8;
+    shpDv.setFloat64(p, ymax, true); p+=8;
+
+    shpDv.setInt32(p, meta.numParts, true); p += 4;
+    shpDv.setInt32(p, meta.numPoints, true); p += 4;
+
+    let startIdx = 0;
+    const partStarts = [];
+    r.rings.forEach(ring => { partStarts.push(startIdx); startIdx += ring.length; });
+    partStarts.forEach(s => { shpDv.setInt32(p, s, true); p += 4; });
+
+    r.rings.forEach(ring => ring.forEach(([x,y]) => {
+      shpDv.setFloat64(p, x, true); p += 8;
+      shpDv.setFloat64(p, y, true); p += 8;
+    }));
+
+    shpOffset += 8 + meta.contentBytes;
+  });
+
+  return { shp: new Uint8Array(shpBuf), shx: new Uint8Array(shxBuf) };
+}
+
+/* ---- DBF ---- */
+function buildDbf(rows) {
+  const fields = [
+    { name: 'CLIENT_NAM', type: 'C', len: 50 },
+    { name: 'FARM_NAME',  type: 'C', len: 50 },
+    { name: 'FIELD_NAME', type: 'C', len: 50 },
+    { name: 'POLYGONTYP', type: 'N', len: 5, dec: 0 },
+  ];
+  const headerLen = 32 + fields.length * 32 + 1;
+  const recordLen = 1 + fields.reduce((s,f) => s + f.len, 0);
+  const totalLen = headerLen + rows.length * recordLen + 1;
+
+  const buf = new ArrayBuffer(totalLen);
+  const dv = new DataView(buf);
+  const bytes = new Uint8Array(buf);
+
+  const now = new Date();
+  dv.setUint8(0, 0x03); // dBase III
+  dv.setUint8(1, Math.max(0, now.getFullYear() - 1900));
+  dv.setUint8(2, now.getMonth() + 1);
+  dv.setUint8(3, now.getDate());
+  dv.setUint32(4, rows.length, true);
+  dv.setUint16(8, headerLen, true);
+  dv.setUint16(10, recordLen, true);
+  dv.setUint8(29, 0x08); // language driver id ~ UTF-8-ish (paired with .cpg for real encoding)
+
+  let off = 32;
+  fields.forEach(f => {
+    const nameBytes = new TextEncoder().encode(f.name.slice(0,10));
+    bytes.set(nameBytes, off);
+    dv.setUint8(off + 11, f.type.charCodeAt(0));
+    dv.setUint8(off + 16, f.len);
+    dv.setUint8(off + 17, f.dec || 0);
+    off += 32;
+  });
+  dv.setUint8(off, 0x0D); off += 1; // header terminator
+
+  rows.forEach(r => {
+    dv.setUint8(off, 0x20); off += 1; // not deleted
+    const values = { CLIENT_NAM: r.client, FARM_NAME: r.farm, FIELD_NAME: r.fieldName, POLYGONTYP: r.type };
+    fields.forEach(f => {
+      const raw = values[f.name];
+      let fieldBytes;
+      if (f.type === 'C') {
+        const enc = new TextEncoder().encode(String(raw ?? ''));
+        fieldBytes = new Uint8Array(f.len).fill(0x20); // space pad
+        fieldBytes.set(enc.subarray(0, f.len));
+      } else {
+        const s = String(Math.trunc(Number(raw) || 0));
+        fieldBytes = new Uint8Array(f.len).fill(0x20);
+        const enc = new TextEncoder().encode(s.slice(0, f.len));
+        fieldBytes.set(enc, f.len - enc.length); // right-justify
+      }
+      bytes.set(fieldBytes, off);
+      off += f.len;
+    });
+  });
+  dv.setUint8(off, 0x1A); // EOF marker
+
+  return new Uint8Array(buf);
+}
+
+const PRJ_WKT = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]';
+
+/* ---- ZIP writer (STORE method, no compression needed) ---- */
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buildZip(fileEntries) {
+  // fileEntries: [{name, data: Uint8Array}]
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  fileEntries.forEach(({ name, data }) => {
+    const nameBytes = new TextEncoder().encode(name);
+    const crc = crc32(data);
+
+    const local = new ArrayBuffer(30 + nameBytes.length);
+    const ldv = new DataView(local);
+    ldv.setUint32(0, 0x04034b50, true);
+    ldv.setUint16(4, 20, true);   // version needed
+    ldv.setUint16(6, 0, true);    // flags
+    ldv.setUint16(8, 0, true);    // method = store
+    ldv.setUint16(10, 0, true);   // time
+    ldv.setUint16(12, 0x21, true);// date (arbitrary valid value)
+    ldv.setUint32(14, crc, true);
+    ldv.setUint32(18, data.length, true);
+    ldv.setUint32(22, data.length, true);
+    ldv.setUint16(26, nameBytes.length, true);
+    ldv.setUint16(28, 0, true);
+    new Uint8Array(local).set(nameBytes, 30);
+
+    localParts.push(new Uint8Array(local), data);
+
+    const central = new ArrayBuffer(46 + nameBytes.length);
+    const cdv = new DataView(central);
+    cdv.setUint32(0, 0x02014b50, true);
+    cdv.setUint16(4, 20, true);
+    cdv.setUint16(6, 20, true);
+    cdv.setUint16(8, 0, true);
+    cdv.setUint16(10, 0, true);
+    cdv.setUint16(12, 0, true);
+    cdv.setUint16(14, 0x21, true);
+    cdv.setUint32(16, crc, true);
+    cdv.setUint32(20, data.length, true);
+    cdv.setUint32(24, data.length, true);
+    cdv.setUint16(28, nameBytes.length, true);
+    cdv.setUint16(30, 0, true);
+    cdv.setUint16(32, 0, true);
+    cdv.setUint16(34, 0, true);
+    cdv.setUint16(36, 0, true);
+    cdv.setUint32(38, 0, true);
+    cdv.setUint32(42, offset, true);
+    new Uint8Array(central).set(nameBytes, 46);
+
+    centralParts.push(new Uint8Array(central));
+    offset += local.byteLength + data.length;
+  });
+
+  const centralStart = offset;
+  let centralSize = 0;
+  centralParts.forEach(p => centralSize += p.length);
+
+  const eocd = new ArrayBuffer(22);
+  const edv = new DataView(eocd);
+  edv.setUint32(0, 0x06054b50, true);
+  edv.setUint16(4, 0, true);
+  edv.setUint16(6, 0, true);
+  edv.setUint16(8, fileEntries.length, true);
+  edv.setUint16(10, fileEntries.length, true);
+  edv.setUint32(12, centralSize, true);
+  edv.setUint32(16, centralStart, true);
+  edv.setUint16(20, 0, true);
+
+  return new Blob([...localParts, ...centralParts, new Uint8Array(eocd)], { type: 'application/zip' });
+}
+
+function buildShapefileZip(rows) {
+  const { shp, shx } = buildShpShx(rows);
+  const dbf = buildDbf(rows);
+  const prj = new TextEncoder().encode(PRJ_WKT);
+  const cpg = new TextEncoder().encode('UTF-8');
+
+  return buildZip([
+    { name: 'Consolidado.shp', data: shp },
+    { name: 'Consolidado.shx', data: shx },
+    { name: 'Consolidado.dbf', data: dbf },
+    { name: 'Consolidado.prj', data: prj },
+    { name: 'Consolidado.cpg', data: cpg },
+  ]);
+}
+
+</script>
+</body>
+</html>
